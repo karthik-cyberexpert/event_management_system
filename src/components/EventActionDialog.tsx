@@ -50,7 +50,7 @@ const roleActions = {
   principal: {
     approve: { label: 'Approve Event', status: 'approved' },
     reject: { label: 'Reject', status: 'rejected' },
-    return: { label: 'Return to Dean', status: 'pending_dean' }, // Or a specific "returned" status
+    return: { label: 'Return to Dean', status: 'returned_to_dean' },
   },
 };
 

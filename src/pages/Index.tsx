@@ -1,8 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import TeacherDashboard from "./teacher/Dashboard";
 import HodDashboard from "./hod/Dashboard";
+import DeanDashboard from "./dean/Dashboard";
 // import AdminDashboard from "./admin/Dashboard"; // Placeholder for future
-// import DeanDashboard from "./dean/Dashboard"; // Placeholder for future
 // import PrincipalDashboard from "./principal/Dashboard"; // Placeholder for future
 
 const Index = () => {
@@ -17,10 +17,10 @@ const Index = () => {
       return <TeacherDashboard />;
     case 'hod':
       return <HodDashboard />;
+    case 'dean':
+      return <DeanDashboard />;
     // case 'admin':
     //   return <AdminDashboard />;
-    // case 'dean':
-    //   return <DeanDashboard />;
     // case 'principal':
     //   return <PrincipalDashboard />;
     default:
