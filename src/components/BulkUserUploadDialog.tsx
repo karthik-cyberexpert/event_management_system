@@ -43,7 +43,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         last_name: 'Doe',
         email: 'john.doe@example.com',
         password: 'strongpassword123',
-        role: 'teacher',
+        role: 'coordinator',
         department: 'Computer Science (B.E)',
       },
     ]);

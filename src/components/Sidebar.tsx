@@ -3,7 +3,7 @@ import { Home, Building, Users, ShieldCheck, CalendarCheck, ClipboardList } from
 import { cn } from '@/lib/utils';
 
 type SidebarProps = {
-  role: 'admin' | 'teacher' | 'hod' | 'dean' | 'principal';
+  role: 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal';
 };
 
 const baseLinks = [
@@ -17,7 +17,7 @@ const navLinks = {
     { to: '/users', label: 'Manage Users', icon: Users },
     { to: '/departments', label: 'Manage Departments', icon: Building },
   ],
-  teacher: [
+  coordinator: [
     { to: '/', label: 'My Events', icon: Home },
     ...baseLinks,
   ],

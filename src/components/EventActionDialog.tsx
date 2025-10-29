@@ -41,7 +41,7 @@ const roleActions = {
   hod: {
     approve: { label: 'Approve & Forward to Dean', status: 'pending_dean', timestampField: 'hod_approval_at' },
     reject: { label: 'Reject', status: 'rejected' },
-    return: { label: 'Return to Teacher', status: 'returned_to_teacher' },
+    return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
   dean: {
     approve: { label: 'Approve & Forward to Principal', status: 'pending_principal', timestampField: 'dean_approval_at' },

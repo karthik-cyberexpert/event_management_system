@@ -19,7 +19,7 @@ import EventCalendar from '@/components/EventCalendar';
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
-  returned_to_teacher: 'bg-orange-500',
+  returned_to_coordinator: 'bg-orange-500',
   pending_dean: 'bg-yellow-600',
   returned_to_hod: 'bg-orange-600',
   pending_principal: 'bg-yellow-700',
@@ -27,7 +27,7 @@ const statusColors = {
   rejected: 'bg-red-500',
 };
 
-const TeacherDashboard = () => {
+const CoordinatorDashboard = () => {
   const { user } = useAuth();
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [approvedEvents, setApprovedEvents] = useState<any[]>([]);
@@ -88,7 +88,7 @@ const TeacherDashboard = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold">Teacher Dashboard</h2>
+        <h2 className="text-3xl font-bold">Coordinator Dashboard</h2>
         <Button onClick={handleCreate}>
           <PlusCircle className="mr-2 h-4 w-4" /> Create Event
         </Button>
@@ -145,7 +145,7 @@ const TeacherDashboard = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {event.status === 'returned_to_teacher' && (
+                        {event.status === 'returned_to_coordinator' && (
                           <Button variant="outline" size="sm" onClick={() => handleEdit(event)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
@@ -171,4 +171,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard;
+export default CoordinatorDashboard;

@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import TeacherDashboard from "./teacher/Dashboard";
+import CoordinatorDashboard from "./coordinator/Dashboard";
 import HodDashboard from "./hod/Dashboard";
 import DeanDashboard from "./dean/Dashboard";
 import PrincipalDashboard from "./principal/Dashboard";
@@ -13,8 +13,8 @@ const Index = () => {
   }
 
   switch (profile.role) {
-    case 'teacher':
-      return <TeacherDashboard />;
+    case 'coordinator':
+      return <CoordinatorDashboard />;
     case 'hod':
       return <HodDashboard />;
     case 'dean':

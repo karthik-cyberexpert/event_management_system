@@ -6,7 +6,7 @@ export type Profile = {
   id: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'teacher' | 'hod' | 'dean' | 'principal';
+  role: 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal';
   department: string;
 };
 

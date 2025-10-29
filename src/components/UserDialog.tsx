@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import { Profile } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
-  role: z.enum(['admin', 'teacher', 'hod', 'dean', 'principal']),
+  role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
   department: z.string().optional(),
 });
 
@@ -93,7 +93,7 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
 
   if (!user) return null;
 
-  const showDepartmentField = form.watch('role') === 'teacher' || form.watch('role') === 'hod';
+  const showDepartmentField = form.watch('role') === 'coordinator' || form.watch('role') === 'hod';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -116,7 +116,7 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="coordinator">Coordinator</SelectItem>
                       <SelectItem value="hod">HOD</SelectItem>
                       <SelectItem value="dean">Dean</SelectItem>
                       <SelectItem value="principal">Principal</SelectItem>

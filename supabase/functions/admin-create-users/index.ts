@@ -31,7 +31,7 @@ serve(async (req) => {
       }
 
       // Determine the department value based on the role, ensuring it's null if not applicable or missing
-      const profileDepartment = (role === 'teacher' || role === 'hod') ? (department || null) : null;
+      const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
 
       // Step 1: Create the user in the auth schema.
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

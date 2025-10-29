@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 
 const statusColors: { [key: string]: string } = {
   pending_hod: 'bg-yellow-500',
-  returned_to_teacher: 'bg-orange-500',
+  returned_to_coordinator: 'bg-orange-500',
   pending_dean: 'bg-yellow-600',
   returned_to_hod: 'bg-orange-600',
   pending_principal: 'bg-yellow-700',
@@ -90,7 +90,7 @@ const AllEvents = () => {
             <SelectItem value="pending_principal">Pending Principal</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="returned_to_teacher">Returned to Teacher</SelectItem>
+            <SelectItem value="returned_to_coordinator">Returned to Coordinator</SelectItem>
             <SelectItem value="returned_to_hod">Returned to HOD</SelectItem>
             <SelectItem value="returned_to_dean">Returned to Dean</SelectItem>
           </SelectContent>
