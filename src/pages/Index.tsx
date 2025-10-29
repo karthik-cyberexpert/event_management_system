@@ -3,7 +3,7 @@ import TeacherDashboard from "./teacher/Dashboard";
 import HodDashboard from "./hod/Dashboard";
 import DeanDashboard from "./dean/Dashboard";
 import PrincipalDashboard from "./principal/Dashboard";
-// import AdminDashboard from "./admin/Dashboard"; // Placeholder for future
+import AdminDashboard from "./admin/Dashboard";
 
 const Index = () => {
   const { profile } = useAuth();
@@ -21,8 +21,8 @@ const Index = () => {
       return <DeanDashboard />;
     case 'principal':
       return <PrincipalDashboard />;
-    // case 'admin':
-    //   return <AdminDashboard />;
+    case 'admin':
+      return <AdminDashboard />;
     default:
       return (
         <div className="p-8">
