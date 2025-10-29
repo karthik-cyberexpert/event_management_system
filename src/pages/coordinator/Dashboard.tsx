@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, List, Calendar, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle } from 'lucide-react';
 import EventDialog from '@/components/EventDialog';
+import EventCancelDialog from '@/components/EventCancelDialog';
 import {
   Table,
   TableBody,
@@ -39,6 +40,7 @@ const CoordinatorDashboard = () => {
   const [approvedEvents, setApprovedEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
 
@@ -90,14 +92,29 @@ const CoordinatorDashboard = () => {
     setIsDialogOpen(true);
   };
 
+  const handleCancel = (event: any) => {
+    setSelectedEvent(event);
+    setIsCancelDialogOpen(true);
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleCancelDialogClose = () => {
+    setIsCancelDialogOpen(false);
     setSelectedEvent(null);
   };
 
   const handleSuccess = () => {
     fetchEvents();
     handleDialogClose();
+  };
+  
+  const handleCancelSuccess = () => {
+    fetchEvents();
+    handleCancelDialogClose();
   };
 
   return (
@@ -116,6 +133,15 @@ const CoordinatorDashboard = () => {
         event={selectedEvent}
         mode={dialogMode}
       />
+      
+      {selectedEvent && (
+        <EventCancelDialog
+          isOpen={isCancelDialogOpen}
+          onClose={handleCancelDialogClose}
+          onCancelSuccess={handleCancelSuccess}
+          event={selectedEvent}
+        />
+      )}
 
       <Tabs defaultValue="my-events">
         <TabsList className="mb-4">
@@ -175,6 +201,14 @@ const CoordinatorDashboard = () => {
                             {event.status === 'returned_to_coordinator' && (
                               <DropdownMenuItem onClick={() => handleEdit(event)}>
                                 Edit
+                              </DropdownMenuItem>
+                            )}
+                            {event.status !== 'rejected' && (
+                              <DropdownMenuItem 
+                                onClick={() => handleCancel(event)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <XCircle className="mr-2 h-4 w-4" /> Cancel Event
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
