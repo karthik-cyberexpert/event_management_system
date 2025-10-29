@@ -30,7 +30,7 @@ const HodDashboard = () => {
       .select(`
         *,
         venues ( name ),
-        profiles:submitted_by ( first_name, last_name )
+        profiles ( first_name, last_name )
       `)
       .in('status', ['pending_hod', 'returned_to_hod'])
       .order('created_at', { ascending: true });

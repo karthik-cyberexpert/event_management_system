@@ -50,7 +50,7 @@ const EventsOverview = () => {
       .select(`
         *,
         venues ( name ),
-        profiles:submitted_by ( first_name, last_name )
+        profiles ( first_name, last_name )
       `)
       .order('created_at', { ascending: false });
 

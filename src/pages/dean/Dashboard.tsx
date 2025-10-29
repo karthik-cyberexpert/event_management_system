@@ -30,7 +30,7 @@ const DeanDashboard = () => {
       .select(`
         *,
         venues ( name ),
-        profiles:submitted_by ( first_name, last_name )
+        profiles ( first_name, last_name )
       `)
       .in('status', ['pending_dean', 'returned_to_dean'])
       .order('created_at', { ascending: true });

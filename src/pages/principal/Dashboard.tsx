@@ -29,7 +29,7 @@ const PrincipalDashboard = () => {
       .select(`
         *,
         venues ( name ),
-        profiles:submitted_by ( first_name, last_name )
+        profiles ( first_name, last_name )
       `)
       .in('status', ['pending_principal'])
       .order('created_at', { ascending: true });

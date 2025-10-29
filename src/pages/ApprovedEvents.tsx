@@ -31,7 +31,7 @@ const ApprovedEvents = () => {
           start_time,
           end_time,
           venues ( name ),
-          profiles:submitted_by ( first_name, last_name )
+          profiles ( first_name, last_name )
         `)
         .eq('status', 'approved')
         .order('event_date', { ascending: true })
