@@ -108,7 +108,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     const names = event.coordinator_name || [];
     const contacts = event.coordinator_contact || [];
     
-    if (names.length === 0) return <p>N/A</p>;
+    if (names.length === 0) return <span>N/A</span>; // Changed to span
 
     return (
       <ul className="list-disc list-inside space-y-1">
@@ -125,7 +125,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     const names = event.speakers || [];
     const details = event.speaker_details || [];
     
-    if (names.length === 0) return <p>N/A</p>;
+    if (names.length === 0) return <span>N/A</span>; // Changed to span
 
     return (
       <ul className="list-disc list-inside space-y-1">
@@ -162,27 +162,27 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
             <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
           </div>
 
-          <p><strong>Description:</strong> {event.description || 'N/A'}</p>
-          <p><strong>Objective:</strong> {event.objective || 'N/A'}</p>
-          <p><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</p>
-          <p><strong>Category:</strong> {formatArray(event.category)}</p>
-          <p><strong>Target Audience:</strong> {formatArray(event.target_audience)}</p>
-          <p><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</p>
+          <div><strong>Description:</strong> {event.description || 'N/A'}</div>
+          <div><strong>Objective:</strong> {event.objective || 'N/A'}</div>
+          <div><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</div>
+          <div><strong>Category:</strong> {formatArray(event.category)}</div>
+          <div><strong>Target Audience:</strong> {formatArray(event.target_audience)}</div>
+          <div><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</div>
           
           <div className="grid grid-cols-2 gap-4 border-t pt-4">
             <div className="col-span-2">
               <strong>Speakers/Resource Persons:</strong>
               {renderSpeakers()}
             </div>
-            <p><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</p>
-            <p><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</p>
-            <p className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</p>
+            <div><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</div>
+            <div><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</div>
+            <div className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</div>
           </div>
 
           <div className="border-t pt-4 space-y-2">
-            <p><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</p>
-            <p><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</p>
-            <p><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</p>
+            <div><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</div>
+            <div><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
+            <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>
           </div>
         </div>
 
