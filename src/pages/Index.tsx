@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import TeacherDashboard from "./teacher/Dashboard";
+import HodDashboard from "./hod/Dashboard";
 // import AdminDashboard from "./admin/Dashboard"; // Placeholder for future
-// import HodDashboard from "./hod/Dashboard"; // Placeholder for future
 // import DeanDashboard from "./dean/Dashboard"; // Placeholder for future
 // import PrincipalDashboard from "./principal/Dashboard"; // Placeholder for future
 
@@ -15,10 +15,10 @@ const Index = () => {
   switch (profile.role) {
     case 'teacher':
       return <TeacherDashboard />;
+    case 'hod':
+      return <HodDashboard />;
     // case 'admin':
     //   return <AdminDashboard />;
-    // case 'hod':
-    //   return <HodDashboard />;
     // case 'dean':
     //   return <DeanDashboard />;
     // case 'principal':
