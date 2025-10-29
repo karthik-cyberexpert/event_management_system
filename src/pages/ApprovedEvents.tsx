@@ -31,7 +31,7 @@ const ApprovedEvents = () => {
           start_time,
           end_time,
           venues ( name ),
-          profiles ( first_name, last_name )
+          submitted_by:profiles ( first_name, last_name )
         `)
         .eq('status', 'approved')
         .order('event_date', { ascending: true })
@@ -40,7 +40,11 @@ const ApprovedEvents = () => {
       if (error) {
         console.error('Error fetching approved events:', error);
       } else {
-        setEvents(data);
+        const mappedData = data.map(event => ({
+          ...event,
+          profiles: event.submitted_by,
+        }));
+        setEvents(mappedData);
       }
       setLoading(false);
     };
@@ -91,9 +95,9 @@ const ApprovedEvents = () => {
                     events.map((event) => (
                       <TableRow key={event.id}>
                         <TableCell className="font-medium">{event.title}</TableCell>
-                        <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                        <TableCell>{event.start_time} - {event.end_time}</TableCell>
+                        <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                         <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                        <TableCell>{event.start_time} - {event.end_time}</TableCell>
                         <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                       </TableRow>
                     ))

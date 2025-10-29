@@ -30,7 +30,7 @@ const HodDashboard = () => {
       .select(`
         *,
         venues ( name ),
-        profiles ( first_name, last_name )
+        submitted_by:profiles ( first_name, last_name )
       `)
       .in('status', ['pending_hod', 'returned_to_hod'])
       .order('created_at', { ascending: true });
@@ -38,7 +38,13 @@ const HodDashboard = () => {
     if (error) {
       console.error('Error fetching events:', error);
     } else {
-      setEvents(data);
+      // Map the data to use 'profiles' for consistency in rendering, 
+      // even though the query uses 'submitted_by' as the alias.
+      const mappedData = data.map(event => ({
+        ...event,
+        profiles: event.submitted_by,
+      }));
+      setEvents(mappedData);
     }
     setLoading(false);
   };

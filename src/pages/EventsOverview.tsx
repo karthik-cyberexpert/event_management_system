@@ -50,14 +50,18 @@ const EventsOverview = () => {
       .select(`
         *,
         venues ( name ),
-        profiles ( first_name, last_name )
+        submitted_by:profiles ( first_name, last_name )
       `)
       .order('created_at', { ascending: false });
 
     if (error) {
       toast.error('Failed to fetch events.');
     } else {
-      setEvents(data);
+      const mappedData = data.map(event => ({
+        ...event,
+        profiles: event.submitted_by,
+      }));
+      setEvents(mappedData);
     }
     setLoading(false);
   };

@@ -30,7 +30,7 @@ const DeanDashboard = () => {
       .select(`
         *,
         venues ( name ),
-        profiles ( first_name, last_name )
+        submitted_by:profiles ( first_name, last_name )
       `)
       .in('status', ['pending_dean', 'returned_to_dean'])
       .order('created_at', { ascending: true });
@@ -38,7 +38,11 @@ const DeanDashboard = () => {
     if (error) {
       console.error('Error fetching events:', error);
     } else {
-      setEvents(data);
+      const mappedData = data.map(event => ({
+        ...event,
+        profiles: event.submitted_by,
+      }));
+      setEvents(mappedData);
     }
     setLoading(false);
   };
