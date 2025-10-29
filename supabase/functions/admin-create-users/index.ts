@@ -30,10 +30,8 @@ serve(async (req) => {
         continue;
       }
 
-      // Determine the department value based on the role, ensuring it's null if not applicable or missing
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
 
-      // Step 1: Create the user in the auth schema.
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -47,20 +45,19 @@ serve(async (req) => {
 
       const userId = authData.user.id;
 
-      // Step 2: Insert the full profile into the public.profiles table.
-      // Note: We explicitly cast the role to 'text' to ensure compatibility with the enum type.
+      // Use upsert to handle cases where a trigger might have already created a basic profile.
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
           first_name,
           last_name,
-          role: role as string, // Pass role as string
+          role: role as string,
           department: profileDepartment,
         });
 
       if (profileError) {
-        // If profile insertion fails, we must delete the created auth user to avoid orphans.
+        // If profile upsert fails, delete the auth user to avoid orphans.
         await supabaseAdmin.auth.admin.deleteUser(userId);
         results.push({ email, success: false, error: `Failed to create profile: ${profileError.message}` });
         continue;

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -92,6 +93,9 @@ const VenueDialog = ({ isOpen, onClose, onSuccess, venue }: VenueDialogProps) =>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{venue ? 'Edit Venue' : 'Add New Venue'}</DialogTitle>
+          <DialogDescription>
+            {venue ? 'Update the details for this venue.' : 'Enter the details for the new venue.'}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -89,6 +90,9 @@ const DepartmentDialog = ({ isOpen, onClose, onSuccess, department }: Department
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{department ? 'Edit Department' : 'Add New Department'}</DialogTitle>
+          <DialogDescription>
+            {department ? 'Update the details for this department.' : 'Enter the details for the new department.'}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
