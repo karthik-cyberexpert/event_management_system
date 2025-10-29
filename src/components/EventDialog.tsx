@@ -80,7 +80,7 @@ const formSchema = z.object({
   speakers_list: z.array(speakerSchema).optional(),
 
   // New fields
-  department_club: z.string().min(1, 'Department/Club is required'),
+  department_club: z.string().min(1, 'Organizing body is required'),
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
@@ -131,7 +131,7 @@ type EventDialogProps = {
 };
 
 const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!event;
@@ -178,6 +178,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
 
   const budgetEstimate = form.watch('budget_estimate');
   const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
+  const canSelectDepartment = !!profile?.department;
+  const canSelectClub = !!profile?.club;
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -247,11 +249,17 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '' }],
       });
     } else {
+      let defaultOrganizer = '';
+      if (profile?.department && !profile.club) {
+        defaultOrganizer = profile.department;
+      } else if (!profile?.department && profile?.club) {
+        defaultOrganizer = profile.club;
+      }
+
       form.reset({
-        // Reset to initial default values
         title: '',
         description: '',
-        department_club: '',
+        department_club: defaultOrganizer,
         mode_of_event: undefined,
         category: [],
         category_others: '',
@@ -274,7 +282,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         speakers_list: [{ name: '', details: '' }],
       });
     }
-  }, [event, form]);
+  }, [event, form, profile]);
 
   const onSubmit = async (values: FormSchema) => {
     if (!user) return;
@@ -407,7 +415,53 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                 <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Department/Club</FormLabel><FormControl><Input placeholder="e.g., Computer Science Department" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                
+                {(canSelectDepartment || canSelectClub) ? (
+                  <FormField
+                    control={form.control}
+                    name="department_club"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Organized By</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-col space-y-2"
+                          >
+                            {canSelectDepartment && (
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={profile!.department!} />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {profile!.department} (Department)
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                            {canSelectClub && (
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={profile!.club!} />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {profile!.club} (Club)
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormItem>
+                    <FormLabel>Organized By</FormLabel>
+                    <p className="text-sm text-muted-foreground pt-2">You must be assigned to a department or club to create an event.</p>
+                  </FormItem>
+                )}
+
                 <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
