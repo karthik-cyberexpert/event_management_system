@@ -335,16 +335,21 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
     // --- End Data Transformation ---
 
     // Check venue availability, excluding the current event if in edit mode
-    const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
+    const rpcParams: { [key: string]: any } = {
       p_venue_id: values.venue_id,
       p_event_date: values.event_date,
       p_start_time: values.start_time,
       p_end_time: values.end_time,
-      p_event_id: isEditMode ? event.id : null,
-    });
+    };
+
+    if (isEditMode && event.id) {
+      rpcParams.p_event_id = event.id;
+    }
+
+    const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', rpcParams);
 
     if (checkError || !isAvailable) {
-      toast.error('Venue is not available at the selected date and time.');
+      toast.error(checkError?.message || 'Venue is not available at the selected date and time.');
       setIsSubmitting(false);
       return;
     }
