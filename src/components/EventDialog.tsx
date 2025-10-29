@@ -363,7 +363,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Event' : 'Create New Event'}</DialogTitle>
-          {isEditMode && <DialogDescription>Make changes and resubmit for approval.</DialogDescription>}
+          <DialogDescription>
+            {isEditMode ? 'Make changes and resubmit for approval.' : 'Fill out the form below to create a new event.'}
+          </DialogDescription>
         </DialogHeader>
 
         {isEditMode && event.remarks && (
@@ -496,7 +498,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                   <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>)} />
               </div>
 
               {/* --- Mode of Event --- */}
@@ -614,7 +616,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                         placeholder="0" 
                         {...field} 
                         value={field.value ?? ''} 
-                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />
