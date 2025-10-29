@@ -11,11 +11,12 @@ import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ApprovedEvents from "./pages/ApprovedEvents";
+import AllEvents from "./pages/admin/AllEvents";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { session, loading } = useAuth();
+  const { session, loading, profile } = useAuth();
 
   if (loading) {
     return (
@@ -35,9 +36,15 @@ const AppRoutes = () => {
             <Layout>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/venues" element={<ManageVenues />} />
-                <Route path="/users" element={<ManageUsers />} />
                 <Route path="/approved-events" element={<ApprovedEvents />} />
+                
+                {profile?.role === 'admin' && (
+                  <>
+                    <Route path="/venues" element={<ManageVenues />} />
+                    <Route path="/users" element={<ManageUsers />} />
+                    <Route path="/all-events" element={<AllEvents />} />
+                  </>
+                )}
               </Routes>
             </Layout>
           ) : (

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Building, Users, ShieldCheck, CalendarCheck } from 'lucide-react';
+import { Home, Building, Users, ShieldCheck, CalendarCheck, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SidebarProps = {
@@ -14,6 +14,7 @@ const navLinks = {
   admin: [
     { to: '/', label: 'Dashboard', icon: Home },
     ...baseLinks,
+    { to: '/all-events', label: 'All Events', icon: ClipboardList },
     { to: '/venues', label: 'Manage Venues', icon: Building },
     { to: '/users', label: 'Manage Users', icon: Users },
   ],
