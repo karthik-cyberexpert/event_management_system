@@ -49,30 +49,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // The onAuthStateChange listener is called once immediately with the initial session.
-    // This is the most reliable way to get the session and handle auth state.
+    setLoading(true);
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // Handle the password recovery event specifically
-        if (event === 'PASSWORD_RECOVERY') {
-          setIsPasswordRecovery(true);
-        } else {
-          setIsPasswordRecovery(false);
-        }
-
+      (event, session) => {
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-        
-        // Fetch profile only if there is a user, otherwise clear it.
-        if (currentUser) {
-          await fetchProfile(currentUser);
-        } else {
-          setProfile(null);
-        }
-        
-        // Once the initial session is handled (or any subsequent auth event),
-        // we can stop the loading state.
+        setIsPasswordRecovery(event === 'PASSWORD_RECOVERY');
+
+        // Fetch profile, but do not block the loading state.
+        // The UI will update once the profile is fetched.
+        fetchProfile(currentUser);
+
+        // Set loading to false as soon as the session is resolved.
         setLoading(false);
       }
     );
