@@ -30,25 +30,39 @@ serve(async (req) => {
         continue;
       }
 
-      // Create the user and pass all profile info in the metadata.
-      // The `handle_new_user` trigger will use this to create the complete profile.
-      const { error } = await supabaseAdmin.auth.admin.createUser({
+      // Step 1: Create the user in the auth schema.
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { 
-          first_name, 
-          last_name, 
-          role,
-          department: (role === 'teacher' || role === 'hod') ? department : null
-        },
       });
 
-      if (error) {
-        results.push({ email, success: false, error: error.message });
-      } else {
-        results.push({ email, success: true });
+      if (authError) {
+        results.push({ email, success: false, error: authError.message });
+        continue;
       }
+
+      const userId = authData.user.id;
+
+      // Step 2: Insert the full profile into the public.profiles table.
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          first_name,
+          last_name,
+          role,
+          department: (role === 'teacher' || role === 'hod') ? department : null,
+        });
+
+      if (profileError) {
+        // If profile insertion fails, we must delete the created auth user to avoid orphans.
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        results.push({ email, success: false, error: `Failed to create profile: ${profileError.message}` });
+        continue;
+      }
+
+      results.push({ email, success: true });
     }
 
     return new Response(JSON.stringify({ results }), {
