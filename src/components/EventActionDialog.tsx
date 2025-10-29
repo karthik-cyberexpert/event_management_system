@@ -150,16 +150,16 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
         
         <div className="space-y-4 py-4 text-sm">
           <div className="grid grid-cols-2 gap-4">
-            <p><strong>Department/Club:</strong> {event.department_club || 'N/A'}</p>
-            <p><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{event.mode_of_event || 'N/A'}</Badge></p>
+            <div><strong>Department/Club:</strong> {event.department_club || 'N/A'}</div>
+            <div><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{event.mode_of_event || 'N/A'}</Badge></div>
             <div className="col-span-2">
               <strong>Coordinators:</strong>
               {renderCoordinators()}
             </div>
-            <p><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</p>
-            <p><strong>Time:</strong> {event.start_time} - {event.end_time}</p>
-            <p><strong>Venue:</strong> {event.venues?.name || 'N/A'}</p>
-            <p><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</p>
+            <div><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</div>
+            <div><strong>Time:</strong> {event.start_time} - {event.end_time}</div>
+            <div><strong>Venue:</strong> {event.venues?.name || 'N/A'}</div>
+            <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
           </div>
 
           <p><strong>Description:</strong> {event.description || 'N/A'}</p>
