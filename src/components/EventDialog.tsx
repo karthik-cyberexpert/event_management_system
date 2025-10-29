@@ -415,7 +415,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
           <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
-        {(isEditMode || isReadOnly) && event.remarks && (
+        {(isEditMode || isReadOnly) && event && event.remarks && (
           <Alert>
             <Terminal className="h-4 w-4" />
             <AlertTitle>Approver Remarks</AlertTitle>
@@ -859,7 +859,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
             </div>
 
             {/* --- Approval Status (Read-Only) --- */}
-            {(isEditMode || isReadOnly) && (
+            {(isEditMode || isReadOnly) && event && (
               <div className="space-y-4 pt-4 border-t">
                 <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
