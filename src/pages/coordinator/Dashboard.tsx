@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, List, Calendar } from 'lucide-react';
+import { PlusCircle, Edit, List, Calendar, MoreHorizontal } from 'lucide-react';
 import EventDialog from '@/components/EventDialog';
 import {
   Table,
@@ -12,6 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +40,7 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -67,11 +74,19 @@ const CoordinatorDashboard = () => {
 
   const handleCreate = () => {
     setSelectedEvent(null);
+    setDialogMode('create');
     setIsDialogOpen(true);
   };
 
   const handleEdit = (event: any) => {
     setSelectedEvent(event);
+    setDialogMode('edit');
+    setIsDialogOpen(true);
+  };
+  
+  const handleView = (event: any) => {
+    setSelectedEvent(event);
+    setDialogMode('view');
     setIsDialogOpen(true);
   };
 
@@ -99,6 +114,7 @@ const CoordinatorDashboard = () => {
         onClose={handleDialogClose}
         onSuccess={handleSuccess}
         event={selectedEvent}
+        mode={dialogMode}
       />
 
       <Tabs defaultValue="my-events">
@@ -145,12 +161,24 @@ const CoordinatorDashboard = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {event.status === 'returned_to_coordinator' && (
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(event)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </Button>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleView(event)}>
+                              View
+                            </DropdownMenuItem>
+                            {event.status === 'returned_to_coordinator' && (
+                              <DropdownMenuItem onClick={() => handleEdit(event)}>
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
