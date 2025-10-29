@@ -1,28 +1,37 @@
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarPlus, Building, Users, ShieldCheck } from 'lucide-react';
+import { Home, Building, Users, ShieldCheck, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SidebarProps = {
   role: 'admin' | 'teacher' | 'hod' | 'dean' | 'principal';
 };
 
+const baseLinks = [
+  { to: '/approved-events', label: 'Approved Events', icon: CalendarCheck },
+];
+
 const navLinks = {
   admin: [
     { to: '/', label: 'Dashboard', icon: Home },
+    ...baseLinks,
     { to: '/venues', label: 'Manage Venues', icon: Building },
     { to: '/users', label: 'Manage Users', icon: Users },
   ],
   teacher: [
     { to: '/', label: 'My Events', icon: Home },
+    ...baseLinks,
   ],
   hod: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    ...baseLinks,
   ],
   dean: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    ...baseLinks,
   ],
   principal: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    ...baseLinks,
   ],
 };
 
@@ -40,7 +49,7 @@ const Sidebar = ({ role }: SidebarProps) => {
             <li key={to}>
               <NavLink
                 to={to}
-                end
+                end={to === '/'}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-3 px-4 py-2 rounded-md transition-colors hover:bg-gray-700',

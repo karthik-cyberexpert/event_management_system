@@ -10,6 +10,7 @@ import { MadeWithDyad } from "./components/made-with-dyad";
 import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
+import ApprovedEvents from "./pages/ApprovedEvents";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +37,7 @@ const AppRoutes = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/venues" element={<ManageVenues />} />
                 <Route path="/users" element={<ManageUsers />} />
-                {/* Add other role-specific routes here */}
+                <Route path="/approved-events" element={<ApprovedEvents />} />
               </Routes>
             </Layout>
           ) : (
