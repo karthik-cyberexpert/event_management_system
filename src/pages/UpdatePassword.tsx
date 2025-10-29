@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate, useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,64 +22,74 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+const updatePasswordSchema = z.object({
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-const Login = () => {
-  const { session } = useAuth();
+const UpdatePassword = () => {
+  const { isPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof updatePasswordSchema>>({
+    resolver: zodResolver(updatePasswordSchema),
     defaultValues: {
-      email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  useEffect(() => {
+    // If the user lands here without being in the recovery flow, redirect them.
+    if (!isPasswordRecovery) {
+      navigate('/login');
+    }
+  }, [isPasswordRecovery, navigate]);
+
+  const onSubmit = async (values: z.infer<typeof updatePasswordSchema>) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
+    const { error } = await supabase.auth.updateUser({
       password: values.password,
     });
-
     setLoading(false);
 
     if (error) {
-      toast.error(error.message || 'Invalid login credentials.');
+      toast.error(error.message || 'Failed to update password.');
     } else {
-      toast.success('Signed in successfully!');
-      navigate('/');
+      toast.success('Password updated successfully! Please sign in.');
+      navigate('/login');
     }
   };
 
-  if (session) {
-    return <Navigate to="/" replace />;
+  if (!isPasswordRecovery) {
+    // Render nothing or a loader while redirecting
+    return null;
   }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Event Platform Login</CardTitle>
-          <CardDescription>Enter your credentials to sign in</CardDescription>
+          <CardTitle className="text-2xl font-bold">Update Your Password</CardTitle>
+          <CardDescription>Enter a new password for your account.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>New Password</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -88,10 +97,10 @@ const Login = () => {
               />
               <FormField
                 control={form.control}
-                name="password"
+                name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Confirm New Password</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -100,13 +109,8 @@ const Login = () => {
                 )}
               />
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? 'Updating...' : 'Update Password'}
               </Button>
-              <div className="mt-4 text-center text-sm">
-                <Link to="/forgot-password" className="underline">
-                  Forgot your password?
-                </Link>
-              </div>
             </form>
           </Form>
         </CardContent>
@@ -115,4 +119,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default UpdatePassword;

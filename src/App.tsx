@@ -13,6 +13,8 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import ApprovedEvents from "./pages/ApprovedEvents";
 import AllEvents from "./pages/admin/AllEvents";
 import ProfilePage from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import UpdatePassword from "./pages/UpdatePassword";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
       <Route 
         path="/*" 
         element={
