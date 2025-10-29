@@ -78,14 +78,20 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
+        const json: any[] = XLSX.utils.sheet_to_json(worksheet);
 
         if (json.length === 0) {
           throw new Error('The uploaded file is empty.');
         }
 
+        // Ensure password is a string, as XLSX can interpret numeric passwords as numbers.
+        const processedJson = json.map(user => ({
+          ...user,
+          password: user.password ? String(user.password) : '',
+        }));
+
         const { data: responseData, error } = await supabase.functions.invoke('admin-create-users', {
-          body: json,
+          body: processedJson,
         });
 
         if (error) throw error;
