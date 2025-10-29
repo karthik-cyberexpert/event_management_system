@@ -30,8 +30,8 @@ serve(async (req) => {
         continue;
       }
 
-      // Determine the department value based on the role
-      const profileDepartment = (role === 'teacher' || role === 'hod') ? department : null;
+      // Determine the department value based on the role, ensuring it's null if not applicable or missing
+      const profileDepartment = (role === 'teacher' || role === 'hod') ? (department || null) : null;
 
       // Step 1: Create the user in the auth schema.
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -48,14 +48,15 @@ serve(async (req) => {
       const userId = authData.user.id;
 
       // Step 2: Insert the full profile into the public.profiles table.
+      // Note: We explicitly cast the role to 'text' to ensure compatibility with the enum type.
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .insert({
           id: userId,
           first_name,
           last_name,
-          role,
-          department: profileDepartment, // Use the determined department value
+          role: role as string, // Pass role as string
+          department: profileDepartment,
         });
 
       if (profileError) {
