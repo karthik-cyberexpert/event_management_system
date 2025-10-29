@@ -13,10 +13,9 @@ const baseLinks = [
 const navLinks = {
   admin: [
     { to: '/', label: 'Dashboard', icon: Home },
-    ...baseLinks,
-    { to: '/all-events', label: 'All Events', icon: ClipboardList },
     { to: '/venues', label: 'Manage Venues', icon: Building },
     { to: '/users', label: 'Manage Users', icon: Users },
+    { to: '/departments', label: 'Manage Departments', icon: Building },
   ],
   teacher: [
     { to: '/', label: 'My Events', icon: Home },

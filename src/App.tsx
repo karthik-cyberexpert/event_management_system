@@ -11,10 +11,10 @@ import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ApprovedEvents from "./pages/ApprovedEvents";
-import AllEvents from "./pages/admin/AllEvents";
 import ProfilePage from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
+import ManageDepartments from "./pages/admin/ManageDepartments";
 
 const queryClient = new QueryClient();
 
@@ -48,7 +48,7 @@ const AppRoutes = () => {
                   <>
                     <Route path="/venues" element={<ManageVenues />} />
                     <Route path="/users" element={<ManageUsers />} />
-                    <Route path="/all-events" element={<AllEvents />} />
+                    <Route path="/departments" element={<ManageDepartments />} />
                   </>
                 )}
               </Routes>
