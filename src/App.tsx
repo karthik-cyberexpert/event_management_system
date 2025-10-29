@@ -16,6 +16,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
+import EventsOverview from "./pages/EventsOverview";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const AppRoutes = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/approved-events" element={<ApprovedEvents />} />
+                <Route path="/events-overview" element={<EventsOverview />} />
                 
                 {profile?.role === 'admin' && (
                   <>
@@ -53,6 +55,7 @@ const AppRoutes = () => {
                     <Route path="/clubs" element={<ManageClubs />} />
                   </>
                 )}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
           ) : (

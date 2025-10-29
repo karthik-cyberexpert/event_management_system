@@ -19,6 +19,9 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import EventActionDialog from '@/components/EventActionDialog';
 
 const statusColors: { [key: string]: string } = {
   pending_hod: 'bg-yellow-500',
@@ -31,32 +34,35 @@ const statusColors: { [key: string]: string } = {
   rejected: 'bg-red-500',
 };
 
-const AllEvents = () => {
+const EventsOverview = () => {
+  const { profile } = useAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+
+  const fetchAllEvents = async () => {
+    setLoading(true);
+    // RLS ensures only events relevant to the user's role are returned.
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        *,
+        venues ( name ),
+        profiles:submitted_by ( first_name, last_name )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error('Failed to fetch events.');
+    } else {
+      setEvents(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchAllEvents = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('events')
-        .select(`
-          *,
-          venues ( name ),
-          profiles:submitted_by ( first_name, last_name )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast.error('Failed to fetch events.');
-      } else {
-        setEvents(data);
-      }
-      setLoading(false);
-    };
-
     fetchAllEvents();
   }, []);
 
@@ -68,11 +74,29 @@ const AllEvents = () => {
     });
   }, [events, statusFilter, searchTerm]);
 
+  const handleActionSuccess = () => {
+    fetchAllEvents();
+    setSelectedEvent(null);
+  };
+
+  const isApprover = profile && ['hod', 'dean', 'principal'].includes(profile.role);
+  const isReviewable = (event: any) => {
+    if (!profile) return false;
+    const role = profile.role;
+    const status = event.status;
+    
+    if (role === 'hod' && (status === 'pending_hod' || status === 'returned_to_hod')) return true;
+    if (role === 'dean' && (status === 'pending_dean' || status === 'returned_to_dean')) return true;
+    if (role === 'principal' && status === 'pending_principal') return true;
+    
+    return false;
+  };
+
   return (
     <div>
-      <h2 className="text-3xl font-bold mb-6">All Events Overview</h2>
+      <h2 className="text-3xl font-bold mb-6">Events Overview</h2>
       
-      <div className="flex items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow">
+      <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow">
         <Input
           placeholder="Search by event title..."
           value={searchTerm}
@@ -84,7 +108,7 @@ const AllEvents = () => {
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">All Viewable Statuses</SelectItem>
             <SelectItem value="pending_hod">Pending HOD</SelectItem>
             <SelectItem value="pending_dean">Pending Dean</SelectItem>
             <SelectItem value="pending_principal">Pending Principal</SelectItem>
@@ -106,16 +130,17 @@ const AllEvents = () => {
               <TableHead>Venue</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
+              {isApprover && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={isApprover ? 6 : 5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : filteredEvents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">No events match the criteria.</TableCell>
+                <TableCell colSpan={isApprover ? 6 : 5} className="text-center">No events match the criteria.</TableCell>
               </TableRow>
             ) : (
               filteredEvents.map((event) => (
@@ -129,14 +154,37 @@ const AllEvents = () => {
                       {event.status.replace(/_/g, ' ').toUpperCase()}
                     </Badge>
                   </TableCell>
+                  {isApprover && (
+                    <TableCell>
+                      {isReviewable(event) ? (
+                        <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
+                          Review
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" disabled>
+                          View
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {selectedEvent && isApprover && (
+        <EventActionDialog
+          event={selectedEvent}
+          isOpen={!!selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onActionSuccess={handleActionSuccess}
+          role={profile!.role as 'hod' | 'dean' | 'principal'}
+        />
+      )}
     </div>
   );
 };
 
-export default AllEvents;
+export default EventsOverview;
