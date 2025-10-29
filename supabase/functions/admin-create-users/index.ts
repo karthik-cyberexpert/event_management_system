@@ -25,7 +25,7 @@ serve(async (req) => {
     const results = [];
 
     for (const userData of users) {
-      const { email, password, first_name, last_name, role, department } = userData;
+      const { email, password, first_name, last_name, role, department, club } = userData;
 
       // --- Validation ---
       if (!email || !password || !first_name || !last_name || !role) {
@@ -40,6 +40,7 @@ serve(async (req) => {
       // --- End Validation ---
 
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
+      const profileClub = (role === 'coordinator') ? (club || null) : null;
 
       const { error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -50,6 +51,7 @@ serve(async (req) => {
           last_name,
           role,
           department: profileDepartment,
+          club: profileClub,
         },
       });
 

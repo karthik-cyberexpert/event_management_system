@@ -16,6 +16,7 @@ const navLinks = {
     { to: '/venues', label: 'Manage Venues', icon: Building },
     { to: '/users', label: 'Manage Users', icon: Users },
     { to: '/departments', label: 'Manage Departments', icon: Building },
+    { to: '/clubs', label: 'Manage Clubs', icon: ClipboardList },
   ],
   coordinator: [
     { to: '/', label: 'My Events', icon: Home },

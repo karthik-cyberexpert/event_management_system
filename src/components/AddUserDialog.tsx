@@ -37,12 +37,18 @@ const formSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
   department: z.string().optional(),
+  club: z.string().optional(),
 });
 
 type Department = {
   id: string;
   name: string;
   degree: string;
+};
+
+type Club = {
+  id: string;
+  name: string;
 };
 
 type AddUserDialogProps = {
@@ -53,6 +59,7 @@ type AddUserDialogProps = {
 
 const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -61,6 +68,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       email: '',
       password: '',
       department: '',
+      club: '',
     },
   });
 
@@ -70,8 +78,16 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       if (error) toast.error('Failed to fetch departments.');
       else setDepartments(data);
     };
-    fetchDepartments();
-  }, []);
+    const fetchClubs = async () => {
+      const { data, error } = await supabase.from('clubs').select('*');
+      if (error) toast.error('Failed to fetch clubs.');
+      else setClubs(data);
+    };
+    if (isOpen) {
+      fetchDepartments();
+      fetchClubs();
+    }
+  }, [isOpen]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -95,6 +111,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   };
 
   const showDepartmentField = form.watch('role') === 'coordinator' || form.watch('role') === 'hod';
+  const showClubField = form.watch('role') === 'coordinator';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -116,6 +133,9 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             {showDepartmentField && (
               <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent>{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            )}
+            {showClubField && (
+              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club (optional)" /></SelectTrigger></FormControl><SelectContent>{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>

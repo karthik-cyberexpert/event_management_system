@@ -32,13 +32,19 @@ import { Profile } from '@/contexts/AuthContext';
 
 const formSchema = z.object({
   role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
-  department: z.string().optional(),
+  department: z.string().optional().nullable(),
+  club: z.string().optional().nullable(),
 });
 
 type Department = {
   id: string;
   name: string;
   degree: string;
+};
+
+type Club = {
+  id: string;
+  name: string;
 };
 
 type UserDialogProps = {
@@ -50,6 +56,7 @@ type UserDialogProps = {
 
 const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -57,20 +64,26 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   useEffect(() => {
     const fetchDepartments = async () => {
       const { data, error } = await supabase.from('departments').select('*');
-      if (error) {
-        toast.error('Failed to fetch departments.');
-      } else {
-        setDepartments(data);
-      }
+      if (error) toast.error('Failed to fetch departments.');
+      else setDepartments(data);
     };
-    fetchDepartments();
-  }, []);
+    const fetchClubs = async () => {
+      const { data, error } = await supabase.from('clubs').select('*');
+      if (error) toast.error('Failed to fetch clubs.');
+      else setClubs(data);
+    };
+    if (isOpen) {
+      fetchDepartments();
+      fetchClubs();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (user) {
       form.reset({
         role: user.role,
         department: user.department,
+        club: user.club,
       });
     }
   }, [user, form]);
@@ -78,9 +91,15 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
 
+    const updateData = {
+      ...values,
+      department: (values.role === 'coordinator' || values.role === 'hod') ? values.department : null,
+      club: values.role === 'coordinator' ? values.club : null,
+    };
+
     const { error } = await supabase
       .from('profiles')
-      .update(values)
+      .update(updateData)
       .eq('id', user.id);
 
     if (error) {
@@ -95,6 +114,7 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   if (!user) return null;
 
   const showDepartmentField = form.watch('role') === 'coordinator' || form.watch('role') === 'hod';
+  const showClubField = form.watch('role') === 'coordinator';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -138,17 +158,43 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a department" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="">None</SelectItem>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>
                             {dept.name} ({dept.degree})
                           </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {showClubField && (
+              <FormField
+                control={form.control}
+                name="club"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Club</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a club (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {clubs.map((club) => (
+                          <SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

@@ -7,7 +7,8 @@ export type Profile = {
   first_name: string;
   last_name: string;
   role: 'admin' | 'coordinator' | 'hod' | 'dean' | 'principal';
-  department: string;
+  department: string | null;
+  club: string | null;
 };
 
 type AuthContextType = {

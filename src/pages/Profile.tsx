@@ -27,7 +27,6 @@ import { useEffect } from 'react';
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
-  department: z.string().optional(),
 });
 
 const ProfilePage = () => {
@@ -38,7 +37,6 @@ const ProfilePage = () => {
     defaultValues: {
       first_name: '',
       last_name: '',
-      department: '',
     },
   });
 
@@ -47,7 +45,6 @@ const ProfilePage = () => {
       form.reset({
         first_name: profile.first_name,
         last_name: profile.last_name,
-        department: profile.department || '',
       });
     }
   }, [profile, form]);
@@ -57,7 +54,10 @@ const ProfilePage = () => {
 
     const { error } = await supabase
       .from('profiles')
-      .update(values)
+      .update({
+        first_name: values.first_name,
+        last_name: values.last_name,
+      })
       .eq('id', profile.id);
 
     if (error) {
@@ -78,7 +78,7 @@ const ProfilePage = () => {
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal details here.</CardDescription>
+          <CardDescription>Update your personal details here. Department, Club, and Role are managed by an administrator.</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -111,19 +111,16 @@ const ProfilePage = () => {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Computer Science" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Input value={profile.department || 'N/A'} disabled />
+                </FormItem>
+                <FormItem>
+                  <FormLabel>Club</FormLabel>
+                  <Input value={profile.club || 'N/A'} disabled />
+                </FormItem>
+              </div>
                <div>
                   <FormLabel>Role</FormLabel>
                   <Input value={profile.role} disabled className="mt-2 capitalize" />

@@ -120,17 +120,18 @@ const ManageUsers = () => {
               <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
+              <TableHead>Club</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">No users found for the selected role.</TableCell>
+                <TableCell colSpan={5} className="text-center">No users found for the selected role.</TableCell>
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
@@ -140,6 +141,7 @@ const ManageUsers = () => {
                     <Badge variant="secondary">{user.role.toUpperCase()}</Badge>
                   </TableCell>
                   <TableCell>{user.department || 'N/A'}</TableCell>
+                  <TableCell>{user.club || 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                       <Edit className="h-4 w-4" />
