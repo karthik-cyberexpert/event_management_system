@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import CreateEventDialog from '@/components/CreateEventDialog';
+import { PlusCircle, Edit } from 'lucide-react';
+import EventDialog from '@/components/EventDialog';
 import {
   Table,
   TableBody,
@@ -30,6 +30,7 @@ const TeacherDashboard = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -55,19 +56,40 @@ const TeacherDashboard = () => {
     fetchEvents();
   }, [user]);
 
+  const handleCreate = () => {
+    setSelectedEvent(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEdit = (event: any) => {
+    setSelectedEvent(event);
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleSuccess = () => {
+    fetchEvents();
+    handleDialogClose();
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">My Events</h2>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={handleCreate}>
           <PlusCircle className="mr-2 h-4 w-4" /> Create Event
         </Button>
       </div>
 
-      <CreateEventDialog
+      <EventDialog
         isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onEventCreated={fetchEvents}
+        onClose={handleDialogClose}
+        onSuccess={handleSuccess}
+        event={selectedEvent}
       />
 
       <div className="bg-white rounded-lg shadow">
@@ -77,8 +99,8 @@ const TeacherDashboard = () => {
               <TableHead>Title</TableHead>
               <TableHead>Venue</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -96,11 +118,18 @@ const TeacherDashboard = () => {
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{event.venues?.name || 'N/A'}</TableCell>
                   <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                  <TableCell>{event.start_time} - {event.end_time}</TableCell>
                   <TableCell>
                     <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white`}>
                       {event.status.replace(/_/g, ' ').toUpperCase()}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {event.status === 'returned_to_teacher' && (
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(event)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
