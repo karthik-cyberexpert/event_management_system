@@ -12,7 +12,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UploadCloud, FileDown } from 'lucide-react';
+import { UploadCloud, FileDown, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type BulkUserUploadDialogProps = {
   isOpen: boolean;
@@ -20,12 +21,20 @@ type BulkUserUploadDialogProps = {
   onSuccess: () => void;
 };
 
+type UploadResult = {
+  email: string;
+  success: boolean;
+  error?: string;
+};
+
 const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDialogProps) => {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<UploadResult[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(acceptedFiles);
+    setUploadErrors([]); // Clear previous errors on new file drop
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -43,8 +52,8 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         last_name: 'Doe',
         email: 'john.doe@example.com',
         password: 'strongpassword123',
-        role: 'coordinator',
-        department: 'Computer Science (B.E)',
+        role: 'coordinator', // Must be one of: admin, coordinator, hod, dean, principal
+        department: 'Computer Science (B.E)', // Required for coordinator and hod roles
       },
     ]);
     const workbook = XLSX.utils.book_new();
@@ -59,6 +68,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
     }
 
     setIsUploading(true);
+    setUploadErrors([]);
     const file = files[0];
     const reader = new FileReader();
 
@@ -80,19 +90,22 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
 
         if (error) throw error;
 
-        const results = responseData.results;
-        const failedResults = results.filter((r: any) => !r.success);
+        const results: UploadResult[] = responseData.results;
+        const failedResults = results.filter((r) => !r.success);
         const successCount = results.length - failedResults.length;
-        const errorCount = failedResults.length;
 
-        toast.success(`${successCount} users created successfully.`);
-        if (errorCount > 0) {
-          toast.error(`${errorCount} users failed to create. Check console for details.`);
-          console.error('Failed user creations:', failedResults); // Log detailed errors
+        if (successCount > 0) {
+          toast.success(`${successCount} user(s) created successfully.`);
+        }
+
+        if (failedResults.length > 0) {
+          setUploadErrors(failedResults);
+          toast.error(`${failedResults.length} user(s) failed to create. See details below.`);
+        } else {
+          onSuccess();
+          onClose();
         }
         
-        onSuccess();
-        onClose();
       } catch (e: any) {
         toast.error(`Upload failed: ${e.message}`);
       } finally {
@@ -104,13 +117,19 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
     reader.readAsArrayBuffer(file);
   };
 
+  const handleClose = () => {
+    setFiles([]);
+    setUploadErrors([]);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Bulk User Upload</DialogTitle>
           <DialogDescription>
-            Upload an XLSX file to create multiple users at once.
+            Upload an XLSX file to create multiple users at once. Ensure roles match the template exactly.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
@@ -133,9 +152,23 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
               </>
             )}
           </div>
+
+          {uploadErrors.length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Upload Errors</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc list-inside text-xs">
+                  {uploadErrors.map((err, index) => (
+                    <li key={index}><strong>{err.email}:</strong> {err.error}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button onClick={handleUpload} disabled={isUploading || files.length === 0}>
             {isUploading ? 'Uploading...' : 'Upload & Create Users'}
           </Button>

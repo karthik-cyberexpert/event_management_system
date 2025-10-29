@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const VALID_ROLES = ['admin', 'coordinator', 'hod', 'dean', 'principal'];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -25,20 +27,24 @@ serve(async (req) => {
     for (const userData of users) {
       const { email, password, first_name, last_name, role, department } = userData;
 
+      // --- Validation ---
       if (!email || !password || !first_name || !last_name || !role) {
-        results.push({ email, success: false, error: 'Missing required fields.' });
+        results.push({ email: email || 'N/A', success: false, error: 'Missing required fields (email, password, first_name, last_name, role).' });
         continue;
       }
 
-      // Department is only relevant for certain roles
+      if (!VALID_ROLES.includes(role)) {
+        results.push({ email, success: false, error: `Invalid role: '${role}'. Must be one of: ${VALID_ROLES.join(', ')}.` });
+        continue;
+      }
+      // --- End Validation ---
+
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
 
-      // Create the user in auth.users and pass profile data in user_metadata.
-      // This allows the `handle_new_user` trigger to create the profile correctly.
       const { error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // Automatically confirm user's email
+        email_confirm: true,
         user_metadata: {
           first_name,
           last_name,
@@ -48,10 +54,8 @@ serve(async (req) => {
       });
 
       if (authError) {
-        // If user creation fails, report the error.
         results.push({ email, success: false, error: authError.message });
       } else {
-        // If user creation succeeds, the trigger will handle profile creation.
         results.push({ email, success: true });
       }
     }
