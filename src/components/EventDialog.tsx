@@ -149,6 +149,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       sdg_alignment: [], // Ensure default is []
       target_audience: [], // Ensure default is []
       target_audience_others: '',
+      // Initialize optional numeric fields to 0 or undefined based on context
       expected_audience: undefined,
       proposed_outcomes: '',
       budget_estimate: undefined,
@@ -222,6 +223,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
 
       form.reset({
         ...event,
+        // Ensure numeric fields are handled as numbers or undefined
         expected_audience: event.expected_audience || undefined,
         budget_estimate: event.budget_estimate || undefined,
         
@@ -246,14 +248,30 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       });
     } else {
       form.reset({
-        coordinators: [{ name: '', contact: '' }],
-        speakers_list: [{ name: '', details: '' }],
-        // Ensure all array fields are explicitly reset to [] if not provided in defaultValues
+        // Reset to initial default values
+        title: '',
+        description: '',
+        department_club: '',
+        mode_of_event: undefined,
         category: [],
+        category_others: '',
+        objective: '',
         sdg_alignment: [],
         target_audience: [],
+        target_audience_others: '',
+        expected_audience: undefined,
+        proposed_outcomes: '',
+        budget_estimate: undefined,
         funding_source: [],
+        funding_source_others: '',
         promotion_strategy: [],
+        promotion_strategy_others: '',
+        venue_id: '',
+        event_date: '',
+        start_time: '',
+        end_time: '',
+        coordinators: [{ name: '', contact: '' }],
+        speakers_list: [{ name: '', details: '' }],
       });
     }
   }, [event, form]);
@@ -306,7 +324,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       speakers: speakerNames, // Array of names
       speaker_details: speakerDetails, // Array of details
       budget_estimate: values.budget_estimate || 0,
-      funding_source: finalFunding,
+      funding_source: values.budget_estimate && values.budget_estimate > 0 ? finalFunding : null,
       promotion_strategy: finalPromotion,
       
       // Reset approval timestamps on resubmit
@@ -498,7 +516,25 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                   <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="expected_audience" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expected No. of Participants</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="e.g., 100" 
+                        {...field} 
+                        // Ensure value is always a string representation of the number or an empty string
+                        value={field.value === undefined ? '' : String(field.value)} 
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(value === '' ? undefined : +value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
               {/* --- Mode of Event --- */}
@@ -615,8 +651,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                         type="number" 
                         placeholder="0" 
                         {...field} 
-                        value={field.value ?? ''} 
-                        onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                        // Ensure value is always a string representation of the number or an empty string
+                        value={field.value === undefined ? '' : String(field.value)} 
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(value === '' ? undefined : +value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
