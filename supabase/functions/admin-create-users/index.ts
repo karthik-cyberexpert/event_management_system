@@ -30,40 +30,30 @@ serve(async (req) => {
         continue;
       }
 
+      // Department is only relevant for certain roles
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
 
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      // Create the user in auth.users and pass profile data in user_metadata.
+      // This allows the `handle_new_user` trigger to create the profile correctly.
+      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: true, // Automatically confirm user's email
+        user_metadata: {
+          first_name,
+          last_name,
+          role,
+          department: profileDepartment,
+        },
       });
 
       if (authError) {
+        // If user creation fails, report the error.
         results.push({ email, success: false, error: authError.message });
-        continue;
+      } else {
+        // If user creation succeeds, the trigger will handle profile creation.
+        results.push({ email, success: true });
       }
-
-      const userId = authData.user.id;
-
-      // Use upsert to handle cases where a trigger might have already created a basic profile.
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .upsert({
-          id: userId,
-          first_name,
-          last_name,
-          role: role as string,
-          department: profileDepartment,
-        });
-
-      if (profileError) {
-        // If profile upsert fails, delete the auth user to avoid orphans.
-        await supabaseAdmin.auth.admin.deleteUser(userId);
-        results.push({ email, success: false, error: `Failed to create profile: ${profileError.message}` });
-        continue;
-      }
-
-      results.push({ email, success: true });
     }
 
     return new Response(JSON.stringify({ results }), {
