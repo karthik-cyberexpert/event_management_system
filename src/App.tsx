@@ -12,6 +12,7 @@ import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ApprovedEvents from "./pages/ApprovedEvents";
 import AllEvents from "./pages/admin/AllEvents";
+import ProfilePage from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const AppRoutes = () => {
             <Layout>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/approved-events" element={<ApprovedEvents />} />
                 
                 {profile?.role === 'admin' && (

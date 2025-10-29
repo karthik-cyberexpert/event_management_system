@@ -3,9 +3,20 @@ import Sidebar from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Layout = ({ children }: { children: ReactNode }) => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   if (!profile) {
     return (
@@ -44,15 +55,25 @@ const Layout = ({ children }: { children: ReactNode }) => {
       <Sidebar role={profile.role} />
       <div className="flex-1 flex flex-col">
         <header className="flex justify-between items-center p-4 border-b bg-white">
-          <h1 className="text-xl font-semibold">Event Platform</h1>
-          <div className="flex items-center gap-4">
-            <span>
-              Welcome, {profile.first_name} ({profile.role})
-            </span>
-            <Button variant="outline" onClick={signOut}>
-              Sign Out
-            </Button>
-          </div>
+          <h1 className="text-xl font-semibold">Event Management System</h1>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2">
+                <UserCircle className="h-5 w-5" />
+                <span>{profile.first_name} {profile.last_name}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex-1 p-6 bg-gray-50">{children}</main>
       </div>
