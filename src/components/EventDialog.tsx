@@ -30,22 +30,81 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// --- Constants for Checkbox Groups ---
+
+const EVENT_CATEGORIES = [
+  'curricular', 'tlp', 'extended curricular activity', 'R & D', 'consultancy', 
+  'alumini', 'industry linkage', 'iic', 'sports', 'culturals', 'extension activity', 'others'
+];
+
+const TARGET_AUDIENCES = [
+  'students', 'faculty', 'industry', 'alumini', 'community', 'others'
+];
+
+const FUNDING_SOURCES = [
+  'institution', 'department', 'sponsership', 'participant fees', 'others'
+];
+
+const PROMOTION_STRATEGIES = [
+  'posters', 'social media', 'email', 'others'
+];
+
+const SDG_GOALS = Array.from({ length: 17 }, (_, i) => `SDG ${i + 1}`);
+
+// --- Zod Schema ---
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
+  
+  // New fields
+  department_club: z.string().min(1, 'Department/Club is required'),
+  coordinator_name: z.string().min(1, 'Coordinator name is required'),
+  coordinator_contact: z.string().regex(/^\d{10}$/, 'Contact must be a 10-digit number'),
+  mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
+  category: z.array(z.string()).min(1, 'Select at least one category'),
+  category_others: z.string().optional(),
+  objective: z.string().min(1, 'Objective is required'),
+  sdg_alignment: z.array(z.string()).optional(),
+  target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
+  target_audience_others: z.string().optional(),
+  expected_audience: z.coerce.number().int().positive('Must be a positive number').optional(),
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
+  speakers: z.string().optional(),
+  speaker_details: z.string().optional(),
+  budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional(),
+  funding_source: z.array(z.string()).optional(),
+  funding_source_others: z.string().optional(),
+  promotion_strategy: z.array(z.string()).min(1, 'Select at least one promotion strategy'),
+  promotion_strategy_others: z.string().optional(),
+
+  // Existing fields
   venue_id: z.string().min(1, 'Venue is required'),
   event_date: z.string().min(1, 'Date is required'),
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
-  expected_audience: z.coerce.number().int().positive().optional(),
 }).refine(data => data.end_time > data.start_time, {
   message: "End time must be after start time",
   path: ["end_time"],
+}).refine(data => {
+  // Conditional validation for funding source based on budget
+  if (data.budget_estimate && data.budget_estimate > 0) {
+    return data.funding_source && data.funding_source.length > 0;
+  }
+  return true;
+}, {
+  message: "Funding source is required if budget estimate is greater than zero.",
+  path: ["funding_source"],
 });
+
+type FormSchema = z.infer<typeof formSchema>;
 
 type Venue = {
   id: string;
@@ -65,9 +124,39 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!event;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      department_club: '',
+      coordinator_name: '',
+      coordinator_contact: '',
+      mode_of_event: undefined,
+      category: [],
+      category_others: '',
+      objective: '',
+      sdg_alignment: [],
+      target_audience: [],
+      target_audience_others: '',
+      expected_audience: undefined,
+      proposed_outcomes: '',
+      speakers: '',
+      speaker_details: '',
+      budget_estimate: undefined,
+      funding_source: [],
+      funding_source_others: '',
+      promotion_strategy: [],
+      promotion_strategy_others: '',
+      venue_id: '',
+      event_date: '',
+      start_time: '',
+      end_time: '',
+    },
   });
+
+  const budgetEstimate = form.watch('budget_estimate');
+  const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -83,26 +172,93 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
 
   useEffect(() => {
     if (event) {
+      // Helper to parse array fields which might include an 'others' value
+      const parseArrayField = (field: string[], options: string[], otherField: string) => {
+        const othersValue = field.find(item => !options.includes(item));
+        const baseValues = field.filter(item => options.includes(item));
+        return {
+          base: baseValues,
+          other: othersValue || '',
+        };
+      };
+
+      const parsedCategory = parseArrayField(event.category || [], EVENT_CATEGORIES, 'category_others');
+      const parsedAudience = parseArrayField(event.target_audience || [], TARGET_AUDIENCES, 'target_audience_others');
+      const parsedFunding = parseArrayField(event.funding_source || [], FUNDING_SOURCES, 'funding_source_others');
+      const parsedPromotion = parseArrayField(event.promotion_strategy || [], PROMOTION_STRATEGIES, 'promotion_strategy_others');
+
       form.reset({
         ...event,
         expected_audience: event.expected_audience || undefined,
+        budget_estimate: event.budget_estimate || undefined,
+        
+        // Parsed array fields
+        category: parsedCategory.base,
+        category_others: parsedCategory.other,
+        target_audience: parsedAudience.base,
+        target_audience_others: parsedAudience.other,
+        funding_source: parsedFunding.base,
+        funding_source_others: parsedFunding.other,
+        promotion_strategy: parsedPromotion.base,
+        promotion_strategy_others: parsedPromotion.other,
+        
+        // SDG is simple array
+        sdg_alignment: event.sdg_alignment || [],
       });
     } else {
-      form.reset({
-        title: '',
-        description: '',
-        venue_id: '',
-        event_date: '',
-        start_time: '',
-        end_time: '',
-        expected_audience: undefined,
-      });
+      form.reset();
     }
   }, [event, form]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormSchema) => {
     if (!user) return;
     setIsSubmitting(true);
+
+    // --- Data Transformation ---
+    const transformArrayField = (base: string[], other: string | undefined) => {
+      const result = [...base];
+      if (other && other.trim()) {
+        result.push(other.trim());
+      }
+      return result;
+    };
+
+    const finalCategory = transformArrayField(values.category, values.category_others);
+    const finalAudience = transformArrayField(values.target_audience, values.target_audience_others);
+    const finalFunding = transformArrayField(values.funding_source || [], values.funding_source_others);
+    const finalPromotion = transformArrayField(values.promotion_strategy, values.promotion_strategy_others);
+
+    const eventData = {
+      title: values.title,
+      description: values.description,
+      venue_id: values.venue_id,
+      event_date: values.event_date,
+      start_time: values.start_time,
+      end_time: values.end_time,
+      expected_audience: values.expected_audience,
+      
+      // New fields
+      department_club: values.department_club,
+      coordinator_name: values.coordinator_name,
+      coordinator_contact: values.coordinator_contact,
+      mode_of_event: values.mode_of_event,
+      category: finalCategory,
+      objective: values.objective,
+      sdg_alignment: values.sdg_alignment,
+      target_audience: finalAudience,
+      proposed_outcomes: values.proposed_outcomes,
+      speakers: values.speakers,
+      speaker_details: values.speaker_details,
+      budget_estimate: values.budget_estimate || 0,
+      funding_source: finalFunding,
+      promotion_strategy: finalPromotion,
+      
+      // Reset approval timestamps on resubmit
+      hod_approval_at: null,
+      dean_approval_at: null,
+      principal_approval_at: null,
+    };
+    // --- End Data Transformation ---
 
     // Check venue availability, excluding the current event if in edit mode
     const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
@@ -124,13 +280,13 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       // Update existing event and reset status for re-approval
       const { error: updateError } = await supabase
         .from('events')
-        .update({ ...values, status: 'pending_hod', remarks: null })
+        .update({ ...eventData, status: 'pending_hod', remarks: null })
         .eq('id', event.id);
       error = updateError;
     } else {
       // Insert new event
       const { error: insertError } = await supabase.from('events').insert({
-        ...values,
+        ...eventData,
         submitted_by: user.id,
       });
       error = insertError;
@@ -148,7 +304,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Event' : 'Create New Event'}</DialogTitle>
           {isEditMode && <DialogDescription>Make changes and resubmit for approval.</DialogDescription>}
@@ -163,18 +319,308 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form fields remain the same */}
-            <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Event Description" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="start_time" render={({ field }) => (<FormItem><FormLabel>Start Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* --- Basic Info --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
+                <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Department/Club</FormLabel><FormControl><Input placeholder="e.g., Computer Science Department" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* --- Coordinator Info --- */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Coordinator Information</h3>
+                <FormField control={form.control} name="coordinator_name" render={({ field }) => (<FormItem><FormLabel>Event Coordinator Name</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="coordinator_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number (10 digits)</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* --- Date, Time, Venue --- */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
+                <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>Proposed Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="start_time" render={({ field }) => (<FormItem><FormLabel>Start Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+                <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* --- Mode of Event --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
+                <FormField control={form.control} name="mode_of_event" render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Mode of Event</FormLabel>
+                    <FormControl>
+                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl><RadioGroupItem value="online" /></FormControl>
+                          <FormLabel className="font-normal">Online</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl><RadioGroupItem value="offline" /></FormControl>
+                          <FormLabel className="font-normal">Offline</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl><RadioGroupItem value="hybrid" /></FormControl>
+                          <FormLabel className="font-normal">Hybrid</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* --- Category Checkboxes --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Event Category</h3>
+                <FormField control={form.control} name="category" render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {EVENT_CATEGORIES.map((item) => (
+                        <FormField key={item} control={form.control} name="category" render={({ field }) => (
+                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))}
+                    </div>
+                    {form.watch('category').includes('others') && (
+                      <FormField control={form.control} name="category_others" render={({ field }) => (
+                        <FormItem className="mt-2">
+                          <FormLabel>Specify Other Category</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                        </FormItem>
+                      )} />
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* --- Target Audience Checkboxes --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Target Audience</h3>
+                <FormField control={form.control} name="target_audience" render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {TARGET_AUDIENCES.map((item) => (
+                        <FormField key={item} control={form.control} name="target_audience" render={({ field }) => (
+                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal capitalize">{item}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))}
+                    </div>
+                    {form.watch('target_audience').includes('others') && (
+                      <FormField control={form.control} name="target_audience_others" render={({ field }) => (
+                        <FormItem className="mt-2">
+                          <FormLabel>Specify Other Audience</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                        </FormItem>
+                      )} />
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* --- Speakers/Resource Person --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person</h3>
+                <FormField control={form.control} name="speakers" render={({ field }) => (<FormItem><FormLabel>Speakers/Resource Person Name(s)</FormLabel><FormControl><Input placeholder="Separate names by comma" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="speaker_details" render={({ field }) => (<FormItem><FormLabel>Designation/Organization/Contact</FormLabel><FormControl><Textarea placeholder="Details about the speakers" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* --- Budget and Funding --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Budget & Funding</h3>
+                <FormField control={form.control} name="budget_estimate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget Estimate (in Rupees)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        {...field} 
+                        value={field.value ?? ''} 
+                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <div className={cn(
+                  !requiresFundingSource && 'opacity-50 pointer-events-none',
+                  'transition-opacity'
+                )}>
+                  <FormField control={form.control} name="funding_source" render={() => (
+                    <FormItem>
+                      <FormLabel>Funding Source (Required if budget &gt; 0)</FormLabel>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {FUNDING_SOURCES.map((item) => (
+                          <FormField key={item} control={form.control} name="funding_source" render={({ field }) => (
+                            <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, item])
+                                      : field.onChange(field.value?.filter((value) => value !== item));
+                                  }}
+                                  disabled={!requiresFundingSource}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel>
+                            </FormItem>
+                          )} />
+                        ))}
+                      </div>
+                      {form.watch('funding_source')?.includes('others') && (
+                        <FormField control={form.control} name="funding_source_others" render={({ field }) => (
+                          <FormItem className="mt-2">
+                            <FormLabel>Specify Other Funding Source</FormLabel>
+                            <FormControl><Textarea {...field} /></FormControl>
+                          </FormItem>
+                        )} />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
+
+              {/* --- Promotion Strategy --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Event Promotion Strategy</h3>
+                <FormField control={form.control} name="promotion_strategy" render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {PROMOTION_STRATEGIES.map((item) => (
+                        <FormField key={item} control={form.control} name="promotion_strategy" render={({ field }) => (
+                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))}
+                    </div>
+                    {form.watch('promotion_strategy').includes('others') && (
+                      <FormField control={form.control} name="promotion_strategy_others" render={({ field }) => (
+                        <FormItem className="mt-2">
+                          <FormLabel>Specify Other Promotion Strategy</FormLabel>
+                          <FormControl><Input {...field} /></FormControl>
+                        </FormItem>
+                      )} />
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* --- SDG Alignment Checkboxes --- */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs (Optional)</h3>
+                <FormField control={form.control} name="sdg_alignment" render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {SDG_GOALS.map((item) => (
+                        <FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (
+                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">{item}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
             </div>
-            <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected Audience</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            
+
+            {/* --- Approval Status (Read-Only) --- */}
+            {isEditMode && (
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FormItem>
+                    <FormLabel>HOD Approval</FormLabel>
+                    <Input 
+                      value={event.hod_approval_at ? `Approved on ${format(new Date(event.hod_approval_at), 'PPP p')}` : 'Pending'} 
+                      disabled 
+                      className={cn(event.hod_approval_at ? 'border-green-500' : 'border-yellow-500')}
+                    />
+                  </FormItem>
+                  <FormItem>
+                    <FormLabel>Dean Approval</FormLabel>
+                    <Input 
+                      value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} 
+                      disabled 
+                      className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')}
+                    />
+                  </FormItem>
+                  <FormItem>
+                    <FormLabel>Principal Approval</FormLabel>
+                    <Input 
+                      value={event.principal_approval_at ? `Approved on ${format(new Date(event.principal_approval_at), 'PPP p')}` : 'Pending'} 
+                      disabled 
+                      className={cn(event.principal_approval_at ? 'border-green-500' : 'border-yellow-500')}
+                    />
+                  </FormItem>
+                </div>
+                <FormItem>
+                  <FormLabel>Remarks (Last Approver)</FormLabel>
+                  <Textarea value={event.remarks || 'N/A'} disabled />
+                </FormItem>
+              </div>
+            )}
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
