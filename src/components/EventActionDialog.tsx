@@ -100,8 +100,25 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
   };
 
   const formatArray = (arr: string[] | null | undefined) => {
-    if (!arr || arr.length === 0) return 'N/A';
+    if (!arr === null || arr === undefined || arr.length === 0) return 'N/A';
     return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
+  };
+
+  const renderCoordinators = () => {
+    const names = event.coordinator_name || [];
+    const contacts = event.coordinator_contact || [];
+    
+    if (names.length === 0) return <p>N/A</p>;
+
+    return (
+      <ul className="list-disc list-inside space-y-1">
+        {names.map((name: string, index: number) => (
+          <li key={index}>
+            {name} ({contacts[index] || 'No contact'})
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   return (
@@ -118,8 +135,10 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
           <div className="grid grid-cols-2 gap-4">
             <p><strong>Department/Club:</strong> {event.department_club || 'N/A'}</p>
             <p><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{event.mode_of_event || 'N/A'}</Badge></p>
-            <p><strong>Coordinator:</strong> {event.coordinator_name || 'N/A'}</p>
-            <p><strong>Contact:</strong> {event.coordinator_contact || 'N/A'}</p>
+            <div className="col-span-2">
+              <strong>Coordinators:</strong>
+              {renderCoordinators()}
+            </div>
             <p><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</p>
             <p><strong>Time:</strong> {event.start_time} - {event.end_time}</p>
             <p><strong>Venue:</strong> {event.venues?.name || 'N/A'}</p>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,8 +34,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 // --- Constants for Checkbox Groups ---
 
@@ -60,14 +61,20 @@ const SDG_GOALS = Array.from({ length: 17 }, (_, i) => `SDG ${i + 1}`);
 
 // --- Zod Schema ---
 
+const coordinatorSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  contact: z.string().regex(/^\d{10}$/, 'Contact must be a 10-digit number'),
+});
+
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   
+  // Updated fields for multiple coordinators
+  coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
+
   // New fields
   department_club: z.string().min(1, 'Department/Club is required'),
-  coordinator_name: z.string().min(1, 'Coordinator name is required'),
-  coordinator_contact: z.string().regex(/^\d{10}$/, 'Contact must be a 10-digit number'),
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
@@ -130,8 +137,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       title: '',
       description: '',
       department_club: '',
-      coordinator_name: '',
-      coordinator_contact: '',
       mode_of_event: undefined,
       category: [],
       category_others: '',
@@ -152,7 +157,13 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       event_date: '',
       start_time: '',
       end_time: '',
+      coordinators: [{ name: '', contact: '' }], // Default to one empty coordinator
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "coordinators",
   });
 
   const budgetEstimate = form.watch('budget_estimate');
@@ -187,6 +198,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       const parsedFunding = parseArrayField(event.funding_source || [], FUNDING_SOURCES, 'funding_source_others');
       const parsedPromotion = parseArrayField(event.promotion_strategy || [], PROMOTION_STRATEGIES, 'promotion_strategy_others');
 
+      // Parse coordinator arrays back into an array of objects
+      const parsedCoordinators = (event.coordinator_name || []).map((name: string, index: number) => ({
+        name: name,
+        contact: (event.coordinator_contact || [])[index] || '',
+      }));
+
       form.reset({
         ...event,
         expected_audience: event.expected_audience || undefined,
@@ -204,9 +221,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         
         // SDG is simple array
         sdg_alignment: event.sdg_alignment || [],
+        
+        // Coordinators
+        coordinators: parsedCoordinators.length > 0 ? parsedCoordinators : [{ name: '', contact: '' }],
       });
     } else {
-      form.reset();
+      form.reset({
+        coordinators: [{ name: '', contact: '' }],
+      });
     }
   }, [event, form]);
 
@@ -227,6 +249,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
     const finalAudience = transformArrayField(values.target_audience, values.target_audience_others);
     const finalFunding = transformArrayField(values.funding_source || [], values.funding_source_others);
     const finalPromotion = transformArrayField(values.promotion_strategy, values.promotion_strategy_others);
+    
+    // Transform coordinators array of objects into two separate arrays of strings
+    const coordinatorNames = values.coordinators.map(c => c.name);
+    const coordinatorContacts = values.coordinators.map(c => c.contact);
 
     const eventData = {
       title: values.title,
@@ -239,8 +265,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       
       // New fields
       department_club: values.department_club,
-      coordinator_name: values.coordinator_name,
-      coordinator_contact: values.coordinator_contact,
+      coordinator_name: coordinatorNames, // Array of names
+      coordinator_contact: coordinatorContacts, // Array of contacts
       mode_of_event: values.mode_of_event,
       category: finalCategory,
       objective: values.objective,
@@ -331,10 +357,53 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
               </div>
 
               {/* --- Coordinator Info --- */}
-              <div className="space-y-4">
+              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
                 <h3 className="text-lg font-semibold border-b pb-2">Coordinator Information</h3>
-                <FormField control={form.control} name="coordinator_name" render={({ field }) => (<FormItem><FormLabel>Event Coordinator Name</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="coordinator_contact" render={({ field }) => (<FormItem><FormLabel>Contact Number (10 digits)</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                {fields.map((item, index) => (
+                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+                    <FormField
+                      control={form.control}
+                      name={`coordinators.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Coordinator {index + 1} Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Coordinator Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`coordinators.${index}.contact`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Number (10 digits)</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="9876543210" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end">
+                      {fields.length > 1 && (
+                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => append({ name: '', contact: '' })}
+                  className="w-full mt-2"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add New Coordinator
+                </Button>
               </div>
 
               {/* --- Date, Time, Venue --- */}
@@ -350,7 +419,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
               </div>
 
               {/* --- Mode of Event --- */}
-              <div className="space-y-4 md:col-span-2">
+              <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
                 <FormField control={form.control} name="mode_of_event" render={({ field }) => (
                   <FormItem className="space-y-3">
