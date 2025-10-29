@@ -381,6 +381,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Department/Club</FormLabel><FormControl><Input placeholder="e.g., Computer Science Department" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} /></FormControl><FormMessage /></FormItem>)} />
