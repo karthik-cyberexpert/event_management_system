@@ -49,22 +49,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      // 1. Fetch initial session immediately
+      const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Error fetching initial session:', sessionError);
+      }
+
+      if (isMounted) {
+        setSession(initialSession);
+        const currentUser = initialSession?.user ?? null;
+        setUser(currentUser);
+        await fetchProfile(currentUser);
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // 2. Set up real-time listener for subsequent changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, currentSession) => {
+        if (!isMounted) return;
+
         if (event === 'PASSWORD_RECOVERY') {
           setIsPasswordRecovery(true);
         } else {
           setIsPasswordRecovery(false);
         }
-        setSession(session);
-        const currentUser = session?.user ?? null;
+        
+        setSession(currentSession);
+        const currentUser = currentSession?.user ?? null;
         setUser(currentUser);
-        await fetchProfile(currentUser);
-        setLoading(false);
+        
+        // Only fetch profile if signed in or if the session changed significantly
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+          await fetchProfile(currentUser);
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
       }
     );
 
     return () => {
+      isMounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
