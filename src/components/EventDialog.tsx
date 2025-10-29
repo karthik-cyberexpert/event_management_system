@@ -440,12 +440,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
               <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
                 <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person</h3>
                 {speakerFields.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
                     <FormField
                       control={form.control}
                       name={`speakers_list.${index}.name`}
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="sm:col-span-1">
                           <FormLabel>Speaker {index + 1} Name</FormLabel>
                           <FormControl>
                             <Input placeholder="Speaker Name" {...field} />
@@ -458,7 +458,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                       control={form.control}
                       name={`speakers_list.${index}.details`}
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="sm:col-span-2">
                           <FormLabel>Designation/Details</FormLabel>
                           <FormControl>
                             <Textarea placeholder="Designation, Organization, Contact" {...field} />
@@ -467,7 +467,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                         </FormItem>
                       )}
                     />
-                    <div className="flex justify-end">
+                    <div className="flex justify-end sm:col-span-1">
                       {speakerFields.length > 1 && (
                         <Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}>
                           <Trash2 className="h-4 w-4" />
