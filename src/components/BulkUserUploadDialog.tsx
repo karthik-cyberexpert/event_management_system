@@ -81,13 +81,14 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         if (error) throw error;
 
         const results = responseData.results;
-        const successCount = results.filter((r: any) => r.success).length;
-        const errorCount = results.length - successCount;
+        const failedResults = results.filter((r: any) => !r.success);
+        const successCount = results.length - failedResults.length;
+        const errorCount = failedResults.length;
 
         toast.success(`${successCount} users created successfully.`);
         if (errorCount > 0) {
           toast.error(`${errorCount} users failed to create. Check console for details.`);
-          console.error('Failed user creations:', results.filter((r: any) => !r.success));
+          console.error('Failed user creations:', failedResults); // Log detailed errors
         }
         
         onSuccess();
@@ -123,11 +124,13 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
             ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}
           >
             <input {...getInputProps()} />
-            <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
             {files.length > 0 ? (
               <p>{files[0].name}</p>
             ) : (
-              <p>Drag & drop an XLSX file here, or click to select</p>
+              <>
+                <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                <p>Drag & drop an XLSX file here, or click to select</p>
+              </>
             )}
           </div>
         </div>
