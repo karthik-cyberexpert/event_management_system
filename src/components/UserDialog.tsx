@@ -158,14 +158,17 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === '--none--' ? null : value)}
+                      value={field.value || ''}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a department" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="--none--">None</SelectItem>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>
                             {dept.name} ({dept.degree})
@@ -185,14 +188,17 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Club</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === '--none--' ? null : value)}
+                      value={field.value || ''}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a club (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="--none--">None</SelectItem>
                         {clubs.map((club) => (
                           <SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>
                         ))}
