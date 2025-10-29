@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, PlusCircle, Upload } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -11,6 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import UserDialog from '@/components/UserDialog';
+import AddUserDialog from '@/components/AddUserDialog';
+import BulkUserUploadDialog from '@/components/BulkUserUploadDialog';
 import { toast } from 'sonner';
 import { Profile } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +20,9 @@ import { Badge } from '@/components/ui/badge';
 const ManageUsers = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
 
   const fetchUsers = async () => {
@@ -42,20 +46,40 @@ const ManageUsers = () => {
 
   const handleEdit = (user: Profile) => {
     setSelectedUser(user);
-    setIsDialogOpen(true);
+    setIsUserDialogOpen(true);
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">Manage Users</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsBulkUploadDialogOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" /> Bulk Upload
+          </Button>
+          <Button onClick={() => setIsAddUserDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add User
+          </Button>
+        </div>
       </div>
 
       <UserDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
+        isOpen={isUserDialogOpen}
+        onClose={() => setIsUserDialogOpen(false)}
         onSuccess={fetchUsers}
         user={selectedUser}
+      />
+
+      <AddUserDialog
+        isOpen={isAddUserDialogOpen}
+        onClose={() => setIsAddUserDialogOpen(false)}
+        onSuccess={fetchUsers}
+      />
+
+      <BulkUserUploadDialog
+        isOpen={isBulkUploadDialogOpen}
+        onClose={() => setIsBulkUploadDialogOpen(false)}
+        onSuccess={fetchUsers}
       />
 
       <div className="bg-white rounded-lg shadow">
