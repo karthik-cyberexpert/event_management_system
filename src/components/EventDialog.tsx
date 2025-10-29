@@ -66,12 +66,18 @@ const coordinatorSchema = z.object({
   contact: z.string().regex(/^\d{10}$/, 'Contact must be a 10-digit number'),
 });
 
+const speakerSchema = z.object({
+  name: z.string().min(1, 'Speaker name is required'),
+  details: z.string().min(1, 'Details (Designation/Organization/Contact) are required'),
+});
+
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   
   // Updated fields for multiple coordinators
   coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
+  speakers_list: z.array(speakerSchema).optional(),
 
   // New fields
   department_club: z.string().min(1, 'Department/Club is required'),
@@ -84,8 +90,11 @@ const formSchema = z.object({
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional(),
   proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
-  speakers: z.string().optional(),
-  speaker_details: z.string().optional(),
+  
+  // Removed old speaker fields from schema
+  // speakers: z.string().optional(),
+  // speaker_details: z.string().optional(),
+  
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional(),
   funding_source: z.array(z.string()).optional(),
   funding_source_others: z.string().optional(),
@@ -146,8 +155,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       target_audience_others: '',
       expected_audience: undefined,
       proposed_outcomes: '',
-      speakers: '',
-      speaker_details: '',
       budget_estimate: undefined,
       funding_source: [],
       funding_source_others: '',
@@ -158,12 +165,18 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       start_time: '',
       end_time: '',
       coordinators: [{ name: '', contact: '' }], // Default to one empty coordinator
+      speakers_list: [{ name: '', details: '' }], // Default to one empty speaker
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: coordinatorFields, append: appendCoordinator, remove: removeCoordinator } = useFieldArray({
     control: form.control,
     name: "coordinators",
+  });
+
+  const { fields: speakerFields, append: appendSpeaker, remove: removeSpeaker } = useFieldArray({
+    control: form.control,
+    name: "speakers_list",
   });
 
   const budgetEstimate = form.watch('budget_estimate');
@@ -203,6 +216,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         name: name,
         contact: (event.coordinator_contact || [])[index] || '',
       }));
+      
+      // Parse speaker arrays back into an array of objects
+      const parsedSpeakers = (event.speakers || []).map((name: string, index: number) => ({
+        name: name,
+        details: (event.speaker_details || [])[index] || '',
+      }));
 
       form.reset({
         ...event,
@@ -224,10 +243,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
         
         // Coordinators
         coordinators: parsedCoordinators.length > 0 ? parsedCoordinators : [{ name: '', contact: '' }],
+        
+        // Speakers
+        speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '' }],
       });
     } else {
       form.reset({
         coordinators: [{ name: '', contact: '' }],
+        speakers_list: [{ name: '', details: '' }],
       });
     }
   }, [event, form]);
@@ -253,6 +276,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
     // Transform coordinators array of objects into two separate arrays of strings
     const coordinatorNames = values.coordinators.map(c => c.name);
     const coordinatorContacts = values.coordinators.map(c => c.contact);
+    
+    // Transform speakers array of objects into two separate arrays of strings
+    const speakerNames = values.speakers_list?.map(s => s.name) || [];
+    const speakerDetails = values.speakers_list?.map(s => s.details) || [];
 
     const eventData = {
       title: values.title,
@@ -273,8 +300,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       sdg_alignment: values.sdg_alignment,
       target_audience: finalAudience,
       proposed_outcomes: values.proposed_outcomes,
-      speakers: values.speakers,
-      speaker_details: values.speaker_details,
+      speakers: speakerNames, // Array of names
+      speaker_details: speakerDetails, // Array of details
       budget_estimate: values.budget_estimate || 0,
       funding_source: finalFunding,
       promotion_strategy: finalPromotion,
@@ -359,7 +386,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
               {/* --- Coordinator Info --- */}
               <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
                 <h3 className="text-lg font-semibold border-b pb-2">Coordinator Information</h3>
-                {fields.map((item, index) => (
+                {coordinatorFields.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
                     <FormField
                       control={form.control}
@@ -388,8 +415,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                       )}
                     />
                     <div className="flex justify-end">
-                      {fields.length > 1 && (
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                      {coordinatorFields.length > 1 && (
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeCoordinator(index)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -399,10 +426,60 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => append({ name: '', contact: '' })}
+                  onClick={() => appendCoordinator({ name: '', contact: '' })}
                   className="w-full mt-2"
                 >
                   <Plus className="mr-2 h-4 w-4" /> Add New Coordinator
+                </Button>
+              </div>
+
+              {/* --- Speakers/Resource Person --- */}
+              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
+                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person</h3>
+                {speakerFields.map((item, index) => (
+                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+                    <FormField
+                      control={form.control}
+                      name={`speakers_list.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Speaker {index + 1} Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Speaker Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`speakers_list.${index}.details`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Designation/Details</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Designation, Organization, Contact" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end">
+                      {speakerFields.length > 1 && (
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => appendSpeaker({ name: '', details: '' })}
+                  className="w-full mt-2"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add New Speaker
                 </Button>
               </div>
 
@@ -517,13 +594,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                     <FormMessage />
                   </FormItem>
                 )} />
-              </div>
-
-              {/* --- Speakers/Resource Person --- */}
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person</h3>
-                <FormField control={form.control} name="speakers" render={({ field }) => (<FormItem><FormLabel>Speakers/Resource Person Name(s)</FormLabel><FormControl><Input placeholder="Separate names by comma" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="speaker_details" render={({ field }) => (<FormItem><FormLabel>Designation/Organization/Contact</FormLabel><FormControl><Textarea placeholder="Details about the speakers" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
 
               {/* --- Budget and Funding --- */}

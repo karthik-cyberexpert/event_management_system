@@ -100,7 +100,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
   };
 
   const formatArray = (arr: string[] | null | undefined) => {
-    if (!arr === null || arr === undefined || arr.length === 0) return 'N/A';
+    if (!arr || arr.length === 0) return 'N/A';
     return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
   };
 
@@ -115,6 +115,23 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
         {names.map((name: string, index: number) => (
           <li key={index}>
             {name} ({contacts[index] || 'No contact'})
+          </li>
+        ))}
+      </ul>
+    );
+  };
+  
+  const renderSpeakers = () => {
+    const names = event.speakers || [];
+    const details = event.speaker_details || [];
+    
+    if (names.length === 0) return <p>N/A</p>;
+
+    return (
+      <ul className="list-disc list-inside space-y-1">
+        {names.map((name: string, index: number) => (
+          <li key={index}>
+            <strong>{name}</strong>: {details[index] || 'No details provided'}
           </li>
         ))}
       </ul>
@@ -153,8 +170,10 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
           <p><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</p>
           
           <div className="grid grid-cols-2 gap-4 border-t pt-4">
-            <p><strong>Speakers:</strong> {event.speakers || 'N/A'}</p>
-            <p><strong>Speaker Details:</strong> {event.speaker_details || 'N/A'}</p>
+            <div className="col-span-2">
+              <strong>Speakers/Resource Persons:</strong>
+              {renderSpeakers()}
+            </div>
             <p><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</p>
             <p><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</p>
             <p className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</p>
