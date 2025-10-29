@@ -91,10 +91,6 @@ const formSchema = z.object({
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional(),
   proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
   
-  // Removed old speaker fields from schema
-  // speakers: z.string().optional(),
-  // speaker_details: z.string().optional(),
-  
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional(),
   funding_source: z.array(z.string()).optional(),
   funding_source_others: z.string().optional(),
@@ -147,25 +143,25 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       description: '',
       department_club: '',
       mode_of_event: undefined,
-      category: [],
+      category: [], // Ensure default is []
       category_others: '',
       objective: '',
-      sdg_alignment: [],
-      target_audience: [],
+      sdg_alignment: [], // Ensure default is []
+      target_audience: [], // Ensure default is []
       target_audience_others: '',
       expected_audience: undefined,
       proposed_outcomes: '',
       budget_estimate: undefined,
-      funding_source: [],
+      funding_source: [], // Ensure default is []
       funding_source_others: '',
-      promotion_strategy: [],
+      promotion_strategy: [], // Ensure default is []
       promotion_strategy_others: '',
       venue_id: '',
       event_date: '',
       start_time: '',
       end_time: '',
-      coordinators: [{ name: '', contact: '' }], // Default to one empty coordinator
-      speakers_list: [{ name: '', details: '' }], // Default to one empty speaker
+      coordinators: [{ name: '', contact: '' }],
+      speakers_list: [{ name: '', details: '' }],
     },
   });
 
@@ -197,19 +193,20 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
   useEffect(() => {
     if (event) {
       // Helper to parse array fields which might include an 'others' value
-      const parseArrayField = (field: string[], options: string[], otherField: string) => {
-        const othersValue = field.find(item => !options.includes(item));
-        const baseValues = field.filter(item => options.includes(item));
+      const parseArrayField = (field: string[] | null | undefined, options: string[]) => {
+        const safeField = field || [];
+        const othersValue = safeField.find(item => !options.includes(item));
+        const baseValues = safeField.filter(item => options.includes(item));
         return {
           base: baseValues,
           other: othersValue || '',
         };
       };
 
-      const parsedCategory = parseArrayField(event.category || [], EVENT_CATEGORIES, 'category_others');
-      const parsedAudience = parseArrayField(event.target_audience || [], TARGET_AUDIENCES, 'target_audience_others');
-      const parsedFunding = parseArrayField(event.funding_source || [], FUNDING_SOURCES, 'funding_source_others');
-      const parsedPromotion = parseArrayField(event.promotion_strategy || [], PROMOTION_STRATEGIES, 'promotion_strategy_others');
+      const parsedCategory = parseArrayField(event.category, EVENT_CATEGORIES);
+      const parsedAudience = parseArrayField(event.target_audience, TARGET_AUDIENCES);
+      const parsedFunding = parseArrayField(event.funding_source, FUNDING_SOURCES);
+      const parsedPromotion = parseArrayField(event.promotion_strategy, PROMOTION_STRATEGIES);
 
       // Parse coordinator arrays back into an array of objects
       const parsedCoordinators = (event.coordinator_name || []).map((name: string, index: number) => ({
@@ -251,6 +248,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
       form.reset({
         coordinators: [{ name: '', contact: '' }],
         speakers_list: [{ name: '', details: '' }],
+        // Ensure all array fields are explicitly reset to [] if not provided in defaultValues
+        category: [],
+        sdg_alignment: [],
+        target_audience: [],
+        funding_source: [],
+        promotion_strategy: [],
       });
     }
   }, [event, form]);
@@ -535,9 +538,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                               <Checkbox
                                 checked={field.value?.includes(item)}
                                 onCheckedChange={(checked) => {
+                                  const currentValues = field.value ?? [];
                                   return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                    ? field.onChange([...currentValues, item])
+                                    : field.onChange(currentValues.filter((value) => value !== item));
                                 }}
                               />
                             </FormControl>
@@ -572,9 +576,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                               <Checkbox
                                 checked={field.value?.includes(item)}
                                 onCheckedChange={(checked) => {
+                                  const currentValues = field.value ?? [];
                                   return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                    ? field.onChange([...currentValues, item])
+                                    : field.onChange(currentValues.filter((value) => value !== item));
                                 }}
                               />
                             </FormControl>
@@ -630,9 +635,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                                 <Checkbox
                                   checked={field.value?.includes(item)}
                                   onCheckedChange={(checked) => {
+                                    const currentValues = field.value ?? [];
                                     return checked
-                                      ? field.onChange([...field.value, item])
-                                      : field.onChange(field.value?.filter((value) => value !== item));
+                                      ? field.onChange([...currentValues, item])
+                                      : field.onChange(currentValues.filter((value) => value !== item));
                                   }}
                                   disabled={!requiresFundingSource}
                                 />
@@ -669,9 +675,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                               <Checkbox
                                 checked={field.value?.includes(item)}
                                 onCheckedChange={(checked) => {
+                                  const currentValues = field.value ?? [];
                                   return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                    ? field.onChange([...currentValues, item])
+                                    : field.onChange(currentValues.filter((value) => value !== item));
                                 }}
                               />
                             </FormControl>
@@ -706,9 +713,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event }: EventDialogProps) =>
                               <Checkbox
                                 checked={field.value?.includes(item)}
                                 onCheckedChange={(checked) => {
+                                  const currentValues = field.value ?? [];
                                   return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(field.value?.filter((value) => value !== item));
+                                    ? field.onChange([...currentValues, item])
+                                    : field.onChange(currentValues.filter((value) => value !== item));
                                 }}
                               />
                             </FormControl>
