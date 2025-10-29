@@ -1,19 +1,36 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import TeacherDashboard from "./teacher/Dashboard";
+// import AdminDashboard from "./admin/Dashboard"; // Placeholder for future
+// import HodDashboard from "./hod/Dashboard"; // Placeholder for future
+// import DeanDashboard from "./dean/Dashboard"; // Placeholder for future
+// import PrincipalDashboard from "./principal/Dashboard"; // Placeholder for future
 
 const Index = () => {
-  const { user, profile, signOut } = useAuth();
+  const { profile } = useAuth();
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <div className="text-center p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold mb-4">Welcome to the Dashboard</h1>
-        {user && <p className="text-xl text-gray-600 mb-2">Hello, {user.email}</p>}
-        {profile && <p className="text-lg text-gray-500 mb-4">Your role is: <span className="font-semibold capitalize">{profile.role}</span></p>}
-        <Button onClick={signOut}>Sign Out</Button>
-      </div>
-    </div>
-  );
+  if (!profile) {
+    return <div>Loading profile...</div>;
+  }
+
+  switch (profile.role) {
+    case 'teacher':
+      return <TeacherDashboard />;
+    // case 'admin':
+    //   return <AdminDashboard />;
+    // case 'hod':
+    //   return <HodDashboard />;
+    // case 'dean':
+    //   return <DeanDashboard />;
+    // case 'principal':
+    //   return <PrincipalDashboard />;
+    default:
+      return (
+        <div className="p-8">
+          <h1 className="text-2xl font-bold">Welcome, {profile.first_name}</h1>
+          <p>Your role ({profile.role}) dashboard is not yet available.</p>
+        </div>
+      );
+  }
 };
 
 export default Index;
