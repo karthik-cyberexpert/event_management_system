@@ -23,10 +23,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import DepartmentDialog from '@/components/DepartmentDialog';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 type Department = {
   id: string;
   name: string;
+  degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA';
 };
 
 const ManageDepartments = () => {
@@ -95,22 +97,26 @@ const ManageDepartments = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Degree</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={3} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : departments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center">No departments found.</TableCell>
+                <TableCell colSpan={3} className="text-center">No departments found.</TableCell>
               </TableRow>
             ) : (
               departments.map((department) => (
                 <TableRow key={department.id}>
                   <TableCell className="font-medium">{department.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{department.degree}</Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(department)}>
                       <Edit className="h-4 w-4" />

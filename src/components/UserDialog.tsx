@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,7 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -35,6 +34,12 @@ const formSchema = z.object({
   department: z.string().optional(),
 });
 
+type Department = {
+  id: string;
+  name: string;
+  degree: string;
+};
+
 type UserDialogProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -43,9 +48,22 @@ type UserDialogProps = {
 };
 
 const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
+  const [departments, setDepartments] = useState<Department[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data, error } = await supabase.from('departments').select('*');
+      if (error) {
+        toast.error('Failed to fetch departments.');
+      } else {
+        setDepartments(data);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -74,6 +92,8 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   };
 
   if (!user) return null;
+
+  const showDepartmentField = form.watch('role') === 'teacher' || form.watch('role') === 'hod';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -107,19 +127,32 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Computer Science" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {showDepartmentField && (
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a department" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>
+                            {dept.name} ({dept.degree})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>

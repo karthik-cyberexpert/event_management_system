@@ -20,15 +20,24 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Department name is required'),
+  degree: z.enum(['B.E', 'B.Tech', 'MCA', 'MBA']),
 });
 
 type Department = {
   id: string;
   name: string;
+  degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA';
 };
 
 type DepartmentDialogProps = {
@@ -45,9 +54,9 @@ const DepartmentDialog = ({ isOpen, onClose, onSuccess, department }: Department
 
   useEffect(() => {
     if (department) {
-      form.reset({ name: department.name });
+      form.reset({ name: department.name, degree: department.degree });
     } else {
-      form.reset({ name: '' });
+      form.reset({ name: '', degree: undefined });
     }
   }, [department, form]);
 
@@ -92,6 +101,29 @@ const DepartmentDialog = ({ isOpen, onClose, onSuccess, department }: Department
                   <FormControl>
                     <Input placeholder="e.g., Computer Science" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="degree"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Degree</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a degree" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="B.E">B.E</SelectItem>
+                      <SelectItem value="B.Tech">B.Tech</SelectItem>
+                      <SelectItem value="MCA">MCA</SelectItem>
+                      <SelectItem value="MBA">MBA</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
