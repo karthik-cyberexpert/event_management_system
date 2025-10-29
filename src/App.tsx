@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MadeWithDyad } from "./components/made-with-dyad";
 import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
+import ManageUsers from "./pages/admin/ManageUsers";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const AppRoutes = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/venues" element={<ManageVenues />} />
+                <Route path="/users" element={<ManageUsers />} />
                 {/* Add other role-specific routes here */}
               </Routes>
             </Layout>
