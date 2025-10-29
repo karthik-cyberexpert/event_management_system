@@ -95,9 +95,9 @@ const ApprovedEvents = () => {
                     events.map((event) => (
                       <TableRow key={event.id}>
                         <TableCell className="font-medium">{event.title}</TableCell>
-                        <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                        <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                        <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                         <TableCell>{event.start_time} - {event.end_time}</TableCell>
+                        <TableCell>{event.venues?.name || 'N/A'}</TableCell>
                         <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                       </TableRow>
                     ))

@@ -39,7 +39,7 @@ const HodDashboard = () => {
       console.error('Error fetching events:', error);
     } else {
       // Map the data to use 'profiles' for consistency in rendering, 
-      // even though the query uses 'submitted_by' as the alias.
+      // as the query returns 'submitted_by' which contains the profile object.
       const mappedData = data.map(event => ({
         ...event,
         profiles: event.submitted_by,
