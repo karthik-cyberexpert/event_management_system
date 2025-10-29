@@ -49,53 +49,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const initializeAuth = async () => {
-      // 1. Fetch initial session immediately
-      const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Error fetching initial session:', sessionError);
-      }
-
-      if (isMounted) {
-        setSession(initialSession);
-        const currentUser = initialSession?.user ?? null;
-        setUser(currentUser);
-        await fetchProfile(currentUser);
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // 2. Set up real-time listener for subsequent changes
+    // The onAuthStateChange listener is called once immediately with the initial session.
+    // This is the most reliable way to get the session and handle auth state.
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!isMounted) return;
-
+      async (event, session) => {
+        // Handle the password recovery event specifically
         if (event === 'PASSWORD_RECOVERY') {
           setIsPasswordRecovery(true);
         } else {
           setIsPasswordRecovery(false);
         }
-        
-        setSession(currentSession);
-        const currentUser = currentSession?.user ?? null;
+
+        setSession(session);
+        const currentUser = session?.user ?? null;
         setUser(currentUser);
         
-        // Only fetch profile if signed in or if the session changed significantly
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+        // Fetch profile only if there is a user, otherwise clear it.
+        if (currentUser) {
           await fetchProfile(currentUser);
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setProfile(null);
         }
+        
+        // Once the initial session is handled (or any subsequent auth event),
+        // we can stop the loading state.
+        setLoading(false);
       }
     );
 
     return () => {
-      isMounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
