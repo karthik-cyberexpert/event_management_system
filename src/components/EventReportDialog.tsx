@@ -10,10 +10,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Printer } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 type EventReportDialogProps = {
   event: any;
@@ -149,9 +151,39 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     }
   }, [isOpen, event]);
 
-  const handlePrint = () => {
-    if (reportData) {
-      window.print();
+  const handleDownloadPdf = async () => {
+    if (!reportData || !reportRef.current) return;
+
+    setLoading(true);
+    toast.loading('Generating PDF...', { id: 'pdf-gen' });
+
+    try {
+      // Use html2canvas to capture the content as an image
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2, // Increase scale for better resolution
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      // Add image to PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Save the PDF
+      const filename = `${reportData.title.replace(/\s/g, '_')}_Report.pdf`;
+      pdf.save(filename);
+
+      toast.success('PDF downloaded successfully!', { id: 'pdf-gen' });
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Failed to generate PDF.', { id: 'pdf-gen' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,7 +197,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
               Official report containing all event details and approval statuses.
             </DialogDescription>
           </DialogHeader>
-          {loading ? (
+          {loading && !reportData ? (
             <div className="text-center py-10">Loading report...</div>
           ) : reportData ? (
             <div ref={reportRef} className="space-y-4">
@@ -178,14 +210,18 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
           )}
           <DialogFooter className="print:hidden">
             <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
-            <Button onClick={handlePrint} disabled={loading || !reportData} className="bg-primary hover:bg-primary/90">
-              <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
+            <Button 
+              onClick={handleDownloadPdf} 
+              disabled={loading || !reportData}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Download className="mr-2 h-4 w-4" /> Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Hidden content for printing, now outside the Dialog component */}
+      {/* Hidden content for printing (kept for fallback/future use, but hidden by print:hidden on dialog) */}
       <div className="hidden print:block">
         {reportData && <EventReportContent data={reportData} />}
       </div>
