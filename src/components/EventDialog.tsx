@@ -37,6 +37,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import TimePicker from './TimePicker';
 
 // --- Constants for Checkbox Groups ---
 
@@ -417,8 +418,40 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
                 <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>Proposed Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="start_time" render={({ field }) => (<FormItem><FormLabel>Start Time</FormLabel><FormControl><Input type="time" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField
+                    control={form.control}
+                    name="start_time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Time</FormLabel>
+                        <FormControl>
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="end_time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Time</FormLabel>
+                        <FormControl>
+                          <TimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}<SelectItem value="other">Other</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                 {selectedVenueId === 'other' && (<FormField control={form.control} name="other_venue_details" render={({ field }) => (<FormItem><FormLabel>Other Venue Details</FormLabel><FormControl><Textarea placeholder="Please specify the venue name and location" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />)}
