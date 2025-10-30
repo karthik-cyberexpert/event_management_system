@@ -30,7 +30,7 @@ const profileSchema = z.object({
 });
 
 const ProfilePage = () => {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -68,7 +68,7 @@ const ProfilePage = () => {
     }
   };
 
-  if (!profile) {
+  if (!profile || !user) {
     return <div>Loading profile...</div>;
   }
 
@@ -111,6 +111,15 @@ const ProfilePage = () => {
                   )}
                 />
               </div>
+              
+              {/* Display Email Address */}
+              <div>
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <Input value={user.email || 'N/A'} disabled />
+                </FormItem>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormItem>
                   <FormLabel>Department</FormLabel>
