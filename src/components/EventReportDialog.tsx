@@ -55,7 +55,17 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
   const academicYear = `${currentYear}-${nextYear}`;
-  const departmentClub = data.department_club || 'N/A';
+  
+  let departmentClub = data.department_club || 'N/A';
+  const departmentRegex = /(.*) \((.*)\)/;
+  const match = departmentClub.match(departmentRegex);
+
+  if (match && match[1] && match[2]) {
+    const departmentName = match[1].trim();
+    const degree = match[2].trim();
+    departmentClub = `(${degree})-${departmentName}`;
+  }
+
   const uniqueId = data.unique_code || 'N/A';
   const referenceNumber = `ACE/IQAC/Events/${academicYear}/${departmentClub}/${uniqueId}`;
 
