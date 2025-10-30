@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import EventActionDialog from '@/components/EventActionDialog';
-import EventLookup from '@/components/EventLookup';
 
 const statusColors = {
   pending_principal: 'bg-yellow-700',
@@ -58,7 +57,7 @@ const PrincipalDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <EventLookup />
+      {/* Removed EventLookup component */}
 
       <div>
         <h2 className="text-3xl font-bold mb-6">Final Event Approvals</h2>
