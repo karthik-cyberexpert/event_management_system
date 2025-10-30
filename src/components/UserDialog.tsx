@@ -80,10 +80,11 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
 
   useEffect(() => {
     if (user) {
+      // When resetting, map null/undefined values to '--none--' so the Select component can handle them
       form.reset({
         role: user.role,
-        department: user.department,
-        club: user.club,
+        department: user.department || '--none--',
+        club: user.club || '--none--',
       });
     }
   }, [user, form]);
@@ -91,10 +92,15 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
 
+    // Map '--none--' back to null for database storage
     const updateData = {
       ...values,
-      department: (values.role === 'coordinator' || values.role === 'hod') ? values.department : null,
-      club: values.role === 'coordinator' ? values.club : null,
+      department: (values.role === 'coordinator' || values.role === 'hod') 
+        ? (values.department === '--none--' ? null : values.department) 
+        : null,
+      club: values.role === 'coordinator' 
+        ? (values.club === '--none--' ? null : values.club) 
+        : null,
     };
 
     const { error } = await supabase
@@ -159,8 +165,8 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                   <FormItem>
                     <FormLabel>Department</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === '--none--' ? null : value)}
-                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      value={field.value || '--none--'} // Use '--none--' for null/undefined display
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -189,8 +195,8 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                   <FormItem>
                     <FormLabel>Club</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === '--none--' ? null : value)}
-                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      value={field.value || '--none--'} // Use '--none--' for null/undefined display
                     >
                       <FormControl>
                         <SelectTrigger>
