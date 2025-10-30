@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import EventCalendar from '@/components/EventCalendar';
 import { List, Calendar } from 'lucide-react';
+import EventLookup from '@/components/EventLookup';
 
 const ApprovedEvents = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -30,6 +31,7 @@ const ApprovedEvents = () => {
           event_date,
           start_time,
           end_time,
+          unique_code,
           venues ( name ),
           submitted_by:profiles ( first_name, last_name )
         `)
@@ -55,8 +57,11 @@ const ApprovedEvents = () => {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">Approved Events Schedule</h2>
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold">Approved Events Schedule</h2>
+      
+      <EventLookup />
+
       <Tabs defaultValue="list">
         <TabsList className="mb-4">
           <TabsTrigger value="list">
@@ -78,6 +83,7 @@ const ApprovedEvents = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Event</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Time</TableHead>
                     <TableHead>Venue</TableHead>
@@ -87,16 +93,17 @@ const ApprovedEvents = () => {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center">Loading events...</TableCell>
+                      <TableCell colSpan={6} className="text-center">Loading events...</TableCell>
                     </TableRow>
                   ) : events.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center">No approved events found.</TableCell>
+                      <TableCell colSpan={6} className="text-center">No approved events found.</TableCell>
                     </TableRow>
                   ) : (
                     events.map((event) => (
                       <TableRow key={event.id}>
                         <TableCell className="font-medium">{event.title}</TableCell>
+                        <TableCell className="font-mono text-xs">{event.unique_code || 'N/A'}</TableCell>
                         <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                         <TableCell>{event.start_time} - {event.end_time}</TableCell>
                         <TableCell>{event.venues?.name || 'N/A'}</TableCell>
