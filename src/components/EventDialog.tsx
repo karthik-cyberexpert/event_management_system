@@ -404,7 +404,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       if (!event) return null; 
       return (
         <FormItem>
-          <FormLabel>Department/Club</FormLabel>
+          <FormLabel>Organizing Department/Club</FormLabel>
           <Input value={event.department_club || 'N/A'} disabled />
         </FormItem>
       );
@@ -442,7 +442,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         name="department_club"
         render={({ field }) => (
           <FormItem className="space-y-3">
-            <FormLabel>Organizing Body</FormLabel>
+            <FormLabel>Organizing Department/Club</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
@@ -486,19 +486,21 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* --- Basic Info --- */}
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
-                {renderDepartmentClubField()}
+              
+              {/* 1. Event Title */}
+              <div className="md:col-span-2 space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
               </div>
 
-              {/* --- Coordinator Info --- */}
+              {/* 2. Organizing Department/Club */}
+              <div className="md:col-span-2">
+                {renderDepartmentClubField()}
+              </div>
+
+              {/* 3. Event Coordinators */}
               <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
-                <h3 className="text-lg font-semibold border-b pb-2">Coordinator Information</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">Event Coordinators</h3>
                 {coordinatorFields.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
                     <FormField
@@ -548,60 +550,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 )}
               </div>
 
-              {/* --- Speakers/Resource Person --- */}
-              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
-                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person</h3>
-                {speakerFields.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
-                    <FormField
-                      control={form.control}
-                      name={`speakers_list.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem className="sm:col-span-1">
-                          <FormLabel>Speaker {index + 1} Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Speaker Name" {...field} disabled={isReadOnly} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`speakers_list.${index}.details`}
-                      render={({ field }) => (
-                        <FormItem className="sm:col-span-2">
-                          <FormLabel>Designation/Details</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Designation, Organization, Contact" {...field} disabled={isReadOnly} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end sm:col-span-1">
-                      {!isReadOnly && speakerFields.length > 1 && (
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {!isReadOnly && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => appendSpeaker({ name: '', details: '' })}
-                    className="w-full mt-2"
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add New Speaker
-                  </Button>
-                )}
-              </div>
-
-              {/* --- Date, Time, Venue --- */}
-              <div className="space-y-4">
+              {/* 4. Proposed Date, 5. Event Duration, 6. Venue */}
+              <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
                 <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>Proposed Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <div className="grid grid-cols-2 gap-4">
@@ -609,26 +559,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                   <FormField control={form.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
                 <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="expected_audience" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expected No. of Participants</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="e.g., 100" 
-                        {...field} 
-                        disabled={isReadOnly}
-                        value={field.value === null || field.value === undefined ? '' : field.value} 
-                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
               </div>
 
-              {/* --- Mode of Event --- */}
-              <div className="space-y-4">
+              {/* 7. Mode of Event */}
+              <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
                 <FormField control={form.control} name="mode_of_event" render={({ field }) => (
                   <FormItem className="space-y-3">
@@ -654,7 +588,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 )} />
               </div>
 
-              {/* --- Category Checkboxes --- */}
+              {/* 8. Event Category */}
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Category</h3>
                 <FormField control={form.control} name="category" render={() => (
@@ -693,7 +627,49 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 )} />
               </div>
 
-              {/* --- Target Audience Checkboxes --- */}
+              {/* 9. Objective of the Event */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Description & Goals</h3>
+                <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+              
+              {/* 10. Key Indicator (Using Description field for now, as 'key indicator' is not a separate DB field) */}
+              <div className="space-y-4 md:col-span-2">
+                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Key Indicator / Detailed Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* 11. Alignment with SDGs */}
+              <div className="space-y-4 md:col-span-2">
+                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs (Optional)</h3>
+                <FormField control={form.control} name="sdg_alignment" render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {SDG_GOALS.map((item) => (
+                        <FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (
+                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  const currentValues = field.value ?? [];
+                                  return checked
+                                    ? field.onChange([...currentValues, item])
+                                    : field.onChange(currentValues.filter((value) => value !== item));
+                                }}
+                                disabled={isReadOnly}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">{item}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* 12. Target Audience */}
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Target Audience</h3>
                 <FormField control={form.control} name="target_audience" render={() => (
@@ -732,7 +708,84 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 )} />
               </div>
 
-              {/* --- Budget and Funding --- */}
+              {/* 13. Expected Number of Participants */}
+              <div className="space-y-4 md:col-span-2">
+                <FormField control={form.control} name="expected_audience" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expected No. of Participants</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="e.g., 100" 
+                        {...field} 
+                        disabled={isReadOnly}
+                        value={field.value === null || field.value === undefined ? '' : field.value} 
+                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {/* 14. Proposed Outcomes */}
+              <div className="space-y-4 md:col-span-2">
+                <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* 15. Speakers/Resource Person & 16. Designation/Organization/Contact */}
+              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
+                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person Details</h3>
+                {speakerFields.map((item, index) => (
+                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+                    <FormField
+                      control={form.control}
+                      name={`speakers_list.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem className="sm:col-span-1">
+                          <FormLabel>Speaker {index + 1} Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Speaker Name" {...field} disabled={isReadOnly} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`speakers_list.${index}.details`}
+                      render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                          <FormLabel>Designation/Organization/Contact</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Designation, Organization, Contact" {...field} disabled={isReadOnly} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end sm:col-span-1">
+                      {!isReadOnly && speakerFields.length > 1 && (
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {!isReadOnly && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => appendSpeaker({ name: '', details: '' })}
+                    className="w-full mt-2"
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Add New Speaker
+                  </Button>
+                )}
+              </div>
+
+              {/* 17. Budget Estimation & 18. Funding Source */}
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Budget & Funding</h3>
                 <FormField control={form.control} name="budget_estimate" render={({ field }) => (
@@ -794,7 +847,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 </div>
               </div>
 
-              {/* --- Promotion Strategy --- */}
+              {/* 19. Event Promotion Strategy */}
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Promotion Strategy</h3>
                 <FormField control={form.control} name="promotion_strategy" render={() => (
@@ -832,37 +885,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                   </FormItem>
                 )} />
               </div>
-
-              {/* --- SDG Alignment Checkboxes --- */}
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs (Optional)</h3>
-                <FormField control={form.control} name="sdg_alignment" render={() => (
-                  <FormItem>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-                      {SDG_GOALS.map((item) => (
-                        <FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (
-                          <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(item)}
-                                onCheckedChange={(checked) => {
-                                  const currentValues = field.value ?? [];
-                                  return checked
-                                    ? field.onChange([...currentValues, item])
-                                    : field.onChange(currentValues.filter((value) => value !== item));
-                                }}
-                                disabled={isReadOnly}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">{item}</FormLabel>
-                          </FormItem>
-                        )} />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
             </div>
 
             {/* --- Approval Status (Read-Only) --- */}
@@ -870,6 +892,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
               <div className="space-y-4 pt-4 border-t">
                 <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* 20. HOD Approval */}
                   <FormItem>
                     <FormLabel>HOD Approval</FormLabel>
                     <Input 
@@ -878,14 +901,16 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                       className={cn(event.hod_approval_at ? 'border-green-500' : 'border-yellow-500')}
                     />
                   </FormItem>
+                  {/* 21. Dean Industrial Approval */}
                   <FormItem>
-                    <FormLabel>Dean Approval</FormLabel>
+                    <FormLabel>Dean Industrial Approval</FormLabel>
                     <Input 
                       value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} 
                       disabled 
                       className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')}
                     />
                   </FormItem>
+                  {/* 23. Principal Approval */}
                   <FormItem>
                     <FormLabel>Principal Approval</FormLabel>
                     <Input 
@@ -895,6 +920,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     />
                   </FormItem>
                 </div>
+                {/* 22. Remarks */}
                 <FormItem>
                   <FormLabel>Remarks (Last Approver)</FormLabel>
                   <Textarea value={event.remarks || 'N/A'} disabled />
