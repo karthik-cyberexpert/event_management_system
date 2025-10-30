@@ -15,7 +15,6 @@ const myApprovalsLink = { to: '/my-approvals', label: 'My Approvals', icon: Chec
 const navLinks = {
   admin: [
     { to: '/', label: 'Dashboard', icon: Home },
-    { to: '/styled-dashboard', label: 'Styled Dashboard', icon: Home },
     { to: '/events-overview', label: 'All Events', icon: ListChecks },
     { to: '/venues', label: 'Manage Venues', icon: Building },
     { to: '/users', label: 'Manage Users', icon: Users },

@@ -4,7 +4,6 @@ import HodDashboard from "./hod/Dashboard";
 import DeanDashboard from "./dean/Dashboard";
 import PrincipalDashboard from "./principal/Dashboard";
 import AdminDashboard from "./admin/Dashboard";
-import StyledDashboard from "./StyledDashboard";
 
 const Index = () => {
   const { profile } = useAuth();
@@ -23,9 +22,9 @@ const Index = () => {
     case 'principal':
       return <PrincipalDashboard />;
     case 'admin':
-      return <StyledDashboard />;
+      return <AdminDashboard />;
     default:
-      return <StyledDashboard />;
+      return <AdminDashboard />;
   }
 };
 
