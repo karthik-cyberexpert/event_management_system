@@ -192,7 +192,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
             <DialogDescription>
               Official report containing all event details and approval statuses.
             </DialogDescription>
-          </Header>
+          </DialogHeader>
           {loading && !reportData ? (
             <div className="text-center py-10">Loading report...</div>
           ) : reportData ? (
