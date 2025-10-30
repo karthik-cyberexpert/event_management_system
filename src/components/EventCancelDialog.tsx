@@ -46,16 +46,19 @@ const EventCancelDialog = ({ event, isOpen, onClose, onCancelSuccess }: EventCan
     setIsSubmitting(true);
     
     // Use 'cancelled' status and store the reason in remarks
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('events')
       .update({ 
         status: 'cancelled', 
         remarks: `CANCELLATION REASON: ${values.cancellation_reason}`,
-      })
+      }, { count: 'exact' }) // Request exact count of affected rows
       .eq('id', event.id);
 
     if (error) {
       toast.error(`Failed to cancel event: ${error.message}`);
+    } else if (count === 0) {
+      // This should ideally not happen with the new RLS policy, but serves as a robust check.
+      toast.error('Cancellation failed: The event could not be updated. Check permissions or if the event is already rejected/cancelled.');
     } else {
       toast.success(`Event "${event.title}" has been successfully canceled.`);
       onCancelSuccess();
