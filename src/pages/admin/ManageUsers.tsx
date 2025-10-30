@@ -50,27 +50,18 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Fetch profiles and join with auth.users to get email
-    // Note: This relies on the RLS policy on 'profiles' allowing the join/select on auth.users data.
-    // Since we are fetching all profiles, we use the '*' selector.
+    // Query the new admin_user_list view to get profiles and emails
     const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        email:auth_users(email)
-      `)
+      .from('admin_user_list')
+      .select('*')
       .order('first_name', { ascending: true });
 
     if (error) {
       toast.error('Failed to fetch users.');
       console.error(error);
     } else {
-      // Map the data to flatten the email structure
-      const mappedUsers: UserWithEmail[] = data.map((user: any) => ({
-        ...user,
-        email: user.email?.email || 'N/A', // Extract email from the joined object
-      }));
-      setUsers(mappedUsers);
+      // The data structure now directly matches UserWithEmail
+      setUsers(data as UserWithEmail[]);
     }
     setLoading(false);
   };
@@ -80,6 +71,7 @@ const ManageUsers = () => {
   }, []);
 
   const handleEdit = (user: Profile) => {
+    // We pass the profile data (which includes email from the view) to the dialog
     setSelectedUser(user);
     setIsUserDialogOpen(true);
   };
