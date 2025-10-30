@@ -82,7 +82,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
         <ReportRow label="Time" value={`${data.start_time} - ${data.end_time}`} />
         <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
         <ReportRow label="Expected Participants" value={data.expected_audience} />
-        <ReportRow label="Description" value={data.description} />
+        <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
         <ReportRow label="Objective" value={data.objective} />
         <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
         <ReportRow label="Category" value={data.category} />
