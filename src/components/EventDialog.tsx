@@ -73,7 +73,7 @@ const speakerSchema = z.object({
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
+  description: z.string().min(1, 'Description is required'),
   
   // Updated fields for multiple coordinators
   coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
