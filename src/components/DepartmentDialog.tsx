@@ -32,13 +32,13 @@ import { toast } from 'sonner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Department name is required'),
-  degree: z.enum(['B.E', 'B.Tech', 'MCA', 'MBA']),
+  degree: z.enum(['B.E', 'B.Tech', 'MCA', 'MBA', 'B.Arch', 'Science and Humanities']),
 });
 
 type Department = {
   id: string;
   name: string;
-  degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA';
+  degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA' | 'B.Arch' | 'Science and Humanities';
 };
 
 type DepartmentDialogProps = {
@@ -126,6 +126,8 @@ const DepartmentDialog = ({ isOpen, onClose, onSuccess, department }: Department
                       <SelectItem value="B.Tech">B.Tech</SelectItem>
                       <SelectItem value="MCA">MCA</SelectItem>
                       <SelectItem value="MBA">MBA</SelectItem>
+                      <SelectItem value="B.Arch">B.Arch</SelectItem>
+                      <SelectItem value="Science and Humanities">Science and Humanities</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
