@@ -59,23 +59,23 @@ const PROMOTION_STRATEGIES = [
 ];
 
 const SDG_GOALS = [
-  'No Poverty',
-  'Zero Hunger',
-  'Good Health and Well-being',
-  'Quality Education',
-  'Gender Equality',
-  'Clean Water and Sanitation',
-  'Affordable and Clean Energy',
-  'Decent Work and Economic Growth',
-  'Industry, Innovation and Infrastructure',
-  'Reduced Inequalities',
-  'Sustainable Cities and Communities',
-  'Responsible Consumption and Production',
-  'Climate Action',
-  'Life Below Water',
-  'Life on Land',
-  'Peace, Justice and Strong Institutions',
-  'Partnerships for the Goals',
+  'SDG 1: No Poverty',
+  'SDG 2: Zero Hunger',
+  'SDG 3: Good Health and Well-being',
+  'SDG 4: Quality Education',
+  'SDG 5: Gender Equality',
+  'SDG 6: Clean Water and Sanitation',
+  'SDG 7: Affordable and Clean Energy',
+  'SDG 8: Decent Work and Economic Growth',
+  'SDG 9: Industry, Innovation and Infrastructure',
+  'SDG 10: Reduced Inequalities',
+  'SDG 11: Sustainable Cities and Communities',
+  'SDG 12: Responsible Consumption and Production',
+  'SDG 13: Climate Action',
+  'SDG 14: Life Below Water',
+  'SDG 15: Life on Land',
+  'SDG 16: Peace, Justice and Strong Institutions',
+  'SDG 17: Partnerships for the Goals',
 ];
 
 // --- Zod Schema ---
@@ -87,7 +87,8 @@ const coordinatorSchema = z.object({
 
 const speakerSchema = z.object({
   name: z.string().min(1, 'Speaker name is required'),
-  details: z.string().min(1, 'Details (Designation/Organization/Contact) are required'),
+  details: z.string().min(1, 'Details (Designation/Organization) are required'),
+  contact: z.string().regex(/^\d{10}$/, 'Contact must be a 10-digit number'),
 });
 
 const formSchema = z.object({
@@ -116,13 +117,27 @@ const formSchema = z.object({
 
   venue_id: z.string().min(1, 'Venue selection is required'),
   other_venue_details: z.string().optional(),
-  event_date: z.string().min(1, 'Date is required'),
+  event_date: z.string().min(1, 'From date is required'),
+  end_date: z.string().optional().nullable(),
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
-}).refine(data => data.end_time > data.start_time, {
-  message: "End time must be after start time",
-  path: ["end_time"],
 }).refine(data => {
+    if (!data.end_date) return true;
+    return data.end_date >= data.event_date;
+  }, {
+    message: "To date must be on or after From date",
+    path: ["end_date"],
+  })
+.refine(data => {
+    if (!data.end_date || data.event_date === data.end_date) {
+      return data.end_time > data.start_time;
+    }
+    return true;
+  }, {
+    message: "End time must be after start time on the same day",
+    path: ["end_time"],
+  })
+.refine(data => {
   if (data.budget_estimate && data.budget_estimate > 0) {
     return data.funding_source && data.funding_source.length > 0;
   }
@@ -187,10 +202,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       venue_id: '',
       other_venue_details: '',
       event_date: '',
+      end_date: '',
       start_time: '',
       end_time: '',
       coordinators: [{ name: '', contact: '' }],
-      speakers_list: [{ name: '', details: '' }],
+      speakers_list: [{ name: '', details: '', contact: '' }],
     },
   });
 
@@ -234,11 +250,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       const parsedFunding = parseArrayField(event.funding_source, FUNDING_SOURCES);
       const parsedPromotion = parseArrayField(event.promotion_strategy, PROMOTION_STRATEGIES);
       const parsedCoordinators = (event.coordinator_name || []).map((name: string, index: number) => ({ name, contact: (event.coordinator_contact || [])[index] || '' }));
-      const parsedSpeakers = (event.speakers || []).map((name: string, index: number) => ({ name, details: (event.speaker_details || [])[index] || '' }));
+      const parsedSpeakers = (event.speakers || []).map((name: string, index: number) => ({ name, details: (event.speaker_details || [])[index] || '', contact: (event.speaker_contacts || [])[index] || '' }));
       const isOtherVenue = !event.venue_id && event.other_venue_details;
 
       form.reset({
         ...event,
+        end_date: event.end_date || '',
         expected_audience: event.expected_audience ?? null,
         budget_estimate: event.budget_estimate ?? null,
         category: parsedCategory.base,
@@ -251,7 +268,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         promotion_strategy_others: parsedPromotion.other,
         sdg_alignment: event.sdg_alignment || [],
         coordinators: parsedCoordinators.length > 0 ? parsedCoordinators : [{ name: '', contact: '' }],
-        speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '' }],
+        speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '', contact: '' }],
         venue_id: isOtherVenue ? 'other' : event.venue_id,
         other_venue_details: event.other_venue_details || '',
       });
@@ -259,7 +276,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       const defaultDeptClub = profile?.department || profile?.club || '';
       form.reset({
         coordinators: [{ name: '', contact: '' }],
-        speakers_list: [{ name: '', details: '' }],
+        speakers_list: [{ name: '', details: '', contact: '' }],
         department_club: defaultDeptClub,
         category: [],
         sdg_alignment: [],
@@ -290,11 +307,13 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     const coordinatorContacts = values.coordinators.map(c => c.contact);
     const speakerNames = values.speakers_list?.map(s => s.name) || [];
     const speakerDetails = values.speakers_list?.map(s => s.details) || [];
+    const speakerContacts = values.speakers_list?.map(s => s.contact) || [];
 
     const eventData = {
       title: values.title,
       description: values.description,
       event_date: values.event_date,
+      end_date: values.end_date || null,
       start_time: values.start_time,
       end_time: values.end_time,
       expected_audience: values.expected_audience,
@@ -309,6 +328,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       proposed_outcomes: values.proposed_outcomes,
       speakers: speakerNames,
       speaker_details: speakerDetails,
+      speaker_contacts: speakerContacts,
       budget_estimate: values.budget_estimate || 0,
       funding_source: finalFunding,
       promotion_strategy: finalPromotion,
@@ -321,7 +341,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
     const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
       p_venue_id: values.venue_id === 'other' ? null : values.venue_id,
-      p_event_date: values.event_date,
+      p_start_date: values.event_date,
+      p_end_date: values.end_date || values.event_date,
       p_start_time: values.start_time,
       p_end_time: values.end_time,
       p_event_id: isEditMode ? event.id : null,
@@ -416,7 +437,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
-                <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>Proposed Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>From Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="end_date" render={({ field }) => (<FormItem><FormLabel>To Date (optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -496,13 +520,16 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
               <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
                 <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person Details</h3>
                 {speakerFields.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
-                    <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Speaker {index + 1} Name</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name={`speakers_list.${index}.details`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Designation/Organization/Contact</FormLabel><FormControl><Textarea placeholder="Designation, Organization, Contact" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                    <div className="flex justify-end sm:col-span-1">{!isReadOnly && speakerFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
+                  <div key={item.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                      <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>{speakerFields.length > 1 ? `Speaker ${index + 1} Name` : 'Speaker Name'}</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`speakers_list.${index}.contact`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Contact Number</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                      <div className="flex justify-end sm:col-span-1">{!isReadOnly && speakerFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
+                    </div>
+                    <FormField control={form.control} name={`speakers_list.${index}.details`} render={({ field }) => (<FormItem><FormLabel>Designation/Organization</FormLabel><FormControl><Textarea placeholder="e.g., Professor, Dept. of CSE, IIT Madras" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 ))}
-                {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendSpeaker({ name: '', details: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Speaker</Button>)}
+                {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendSpeaker({ name: '', details: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Speaker</Button>)}
               </div>
 
               <div className="space-y-4 md:col-span-2">
