@@ -38,31 +38,26 @@ const formSchema = z.object({
   role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
   department: z.string().optional(),
   club: z.string().optional(),
+  professional_society: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.role === 'coordinator') {
     const isDepartmentSelected = data.department && data.department !== '--none--';
     const isClubSelected = data.club && data.club !== '--none--';
+    const isSocietySelected = data.professional_society && data.professional_society !== '--none--';
 
-    if (!isDepartmentSelected && !isClubSelected) {
+    if (!isDepartmentSelected && !isClubSelected && !isSocietySelected) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Coordinator must be assigned to either a Department or a Club.',
+        message: 'Coordinator must be assigned to a Department, Club, or Society.',
         path: ['department'], // Attach error to department field for visibility
       });
     }
   }
 });
 
-type Department = {
-  id: string;
-  name: string;
-  degree: string;
-};
-
-type Club = {
-  id: string;
-  name: string;
-};
+type Department = { id: string; name: string; degree: string; };
+type Club = { id: string; name: string; };
+type ProfessionalSociety = { id: string; name: string; };
 
 type AddUserDialogProps = {
   isOpen: boolean;
@@ -73,6 +68,7 @@ type AddUserDialogProps = {
 const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [societies, setSocieties] = useState<ProfessionalSociety[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,33 +78,33 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       password: '',
       department: '',
       club: '',
+      professional_society: '',
     },
   });
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      const { data, error } = await supabase.from('departments').select('*');
-      if (error) toast.error('Failed to fetch departments.');
-      else setDepartments(data);
-    };
-    const fetchClubs = async () => {
-      const { data, error } = await supabase.from('clubs').select('*');
-      if (error) toast.error('Failed to fetch clubs.');
-      else setClubs(data);
+    const fetchDropdownData = async () => {
+      const { data: depts, error: deptsError } = await supabase.from('departments').select('*');
+      if (deptsError) toast.error('Failed to fetch departments.'); else setDepartments(depts);
+
+      const { data: clubsData, error: clubsError } = await supabase.from('clubs').select('*');
+      if (clubsError) toast.error('Failed to fetch clubs.'); else setClubs(clubsData);
+
+      const { data: societiesData, error: societiesError } = await supabase.from('professional_societies').select('*');
+      if (societiesError) toast.error('Failed to fetch societies.'); else setSocieties(societiesData);
     };
     if (isOpen) {
-      fetchDepartments();
-      fetchClubs();
+      fetchDropdownData();
     }
   }, [isOpen]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Map '--none--' back to null/undefined for the Edge Function
       const submissionValues = {
         ...values,
         department: values.department === '--none--' ? null : values.department,
         club: values.club === '--none--' ? null : values.club,
+        professional_society: values.professional_society === '--none--' ? null : values.professional_society,
       };
 
       const { data, error } = await supabase.functions.invoke('admin-create-users', {
@@ -133,21 +129,22 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
   const role = form.watch('role');
   const departmentValue = form.watch('department');
   const clubValue = form.watch('club');
+  const societyValue = form.watch('professional_society');
 
   const showDepartmentField = role === 'coordinator' || role === 'hod';
   const showClubField = role === 'coordinator';
+  const showSocietyField = role === 'coordinator';
   
   const isDepartmentSelected = departmentValue && departmentValue !== '--none--';
   const isClubSelected = clubValue && clubValue !== '--none--';
+  const isSocietySelected = societyValue && societyValue !== '--none--';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>
-            Create a new user account and assign their role.
-          </DialogDescription>
+          <DialogDescription>Create a new user account and assign their role.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -160,10 +157,13 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
             {showDepartmentField && (
-              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent>{!isClubSelected && <SelectItem value="--none--">None</SelectItem>}{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent>{!isClubSelected && !isSocietySelected && <SelectItem value="--none--">None</SelectItem>}{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
             {showClubField && (
-              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club (optional)" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && <SelectItem value="--none--">None</SelectItem>}{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && !isSocietySelected && <SelectItem value="--none--">None</SelectItem>}{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            )}
+            {showSocietyField && (
+              <FormField control={form.control} name="professional_society" render={({ field }) => (<FormItem><FormLabel>Professional Society</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a society" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && !isClubSelected && <SelectItem value="--none--">None</SelectItem>}{societies.map((society) => (<SelectItem key={society.id} value={society.name}>{society.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
 
             <DialogFooter>

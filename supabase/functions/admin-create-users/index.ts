@@ -25,7 +25,7 @@ serve(async (req) => {
     const results = [];
 
     for (const userData of users) {
-      const { email, password, first_name, last_name, role, department, club } = userData;
+      const { email, password, first_name, last_name, role, department, club, professional_society } = userData;
 
       // --- Validation ---
       if (!email || !password || !first_name || !last_name || !role) {
@@ -38,15 +38,16 @@ serve(async (req) => {
         continue;
       }
       
-      // Coordinator specific validation: Must have either department OR club assigned
-      if (role === 'coordinator' && !department && !club) {
-        results.push({ email, success: false, error: 'Coordinator must be assigned to either a Department or a Club.' });
+      // Coordinator specific validation: Must have either department, club, or society assigned
+      if (role === 'coordinator' && !department && !club && !professional_society) {
+        results.push({ email, success: false, error: 'Coordinator must be assigned to a Department, Club, or Professional Society.' });
         continue;
       }
       // --- End Validation ---
 
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
       const profileClub = (role === 'coordinator') ? (club || null) : null;
+      const profileSociety = (role === 'coordinator') ? (professional_society || null) : null;
 
       const { error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -58,6 +59,7 @@ serve(async (req) => {
           role,
           department: profileDepartment,
           club: profileClub,
+          professional_society: profileSociety,
         },
       });
 

@@ -55,6 +55,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         role: 'coordinator', // Must be one of: admin, coordinator, hod, dean, principal
         department: 'Computer Science (B.E)', // Required for coordinator and hod roles
         club: 'Coding Club', // Optional, for coordinator role
+        professional_society: 'IEEE', // Optional, for coordinator role
       },
     ]);
     const workbook = XLSX.utils.book_new();
@@ -136,7 +137,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         <DialogHeader>
           <DialogTitle>Bulk User Upload</DialogTitle>
           <DialogDescription>
-            Upload an XLSX file to create multiple users at once. Add a 'club' column for coordinators.
+            Upload an XLSX file to create multiple users. Coordinators can be assigned to a department, club, or professional society.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">

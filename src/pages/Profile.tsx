@@ -78,57 +78,22 @@ const ProfilePage = () => {
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your personal details here. Department, Club, and Role are managed by an administrator.</CardDescription>
+          <CardDescription>Update your personal details here. Assignments and Role are managed by an administrator.</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="first_name" render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input placeholder="John" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               
-              {/* Display Email Address */}
-              <div>
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <Input value={user.email || 'N/A'} disabled />
-                </FormItem>
-              </div>
+              <div><FormItem><FormLabel>Email Address</FormLabel><Input value={user.email || 'N/A'} disabled /></FormItem></div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <Input value={profile.department || 'N/A'} disabled />
-                </FormItem>
-                <FormItem>
-                  <FormLabel>Club</FormLabel>
-                  <Input value={profile.club || 'N/A'} disabled />
-                </FormItem>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormItem><FormLabel>Department</FormLabel><Input value={profile.department || 'N/A'} disabled /></FormItem>
+                <FormItem><FormLabel>Club</FormLabel><Input value={profile.club || 'N/A'} disabled /></FormItem>
+                <FormItem><FormLabel>Professional Society</FormLabel><Input value={profile.professional_society || 'N/A'} disabled /></FormItem>
               </div>
                <div>
                   <FormLabel>Role</FormLabel>

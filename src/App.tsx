@@ -16,6 +16,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
+import ManageProfessionalSocieties from "./pages/admin/ManageProfessionalSocieties";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const AppRoutes = () => {
                     <Route path="/users" element={<ManageUsers />} />
                     <Route path="/departments" element={<ManageDepartments />} />
                     <Route path="/clubs" element={<ManageClubs />} />
+                    <Route path="/professional-societies" element={<ManageProfessionalSocieties />} />
                   </>
                 )}
                 <Route path="*" element={<NotFound />} />

@@ -98,7 +98,7 @@ const formSchema = z.object({
   coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
   speakers_list: z.array(speakerSchema).optional(),
 
-  department_club: z.string().min(1, 'Department/Club is required'),
+  department_club: z.string().min(1, 'Department/Club/Society is required'),
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
@@ -179,7 +179,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const isReadOnly = mode === 'view';
   const isCoordinator = profile?.role === 'coordinator';
 
-  // Calculate today's date in YYYY-MM-DD format for min attribute
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const form = useForm<FormSchema>({
@@ -276,7 +275,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         other_venue_details: event.other_venue_details || '',
       });
     } else {
-      const defaultDeptClub = profile?.department || profile?.club || '';
+      const defaultDeptClub = profile?.department || profile?.club || profile?.professional_society || '';
       form.reset({
         coordinators: [{ name: '', contact: '' }],
         speakers_list: [{ name: '', details: '', contact: '' }],
@@ -395,12 +394,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
   const renderDepartmentClubField = () => {
     if (isReadOnly && event) {
-      return <FormItem><FormLabel>Organizing Department/Club</FormLabel><Input value={event.department_club || 'N/A'} disabled /></FormItem>;
+      return <FormItem><FormLabel>Organizing Department/Club/Society</FormLabel><Input value={event.department_club || 'N/A'} disabled /></FormItem>;
     }
     if (!isCoordinator) {
       return <Alert variant="destructive"><AlertTitle>Access Denied</AlertTitle><AlertDescription>Only users with the 'coordinator' role can create events.</AlertDescription></Alert>;
     }
-    return <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Organizing Department/Club</FormLabel><FormControl><Input placeholder="Enter department or club name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />;
+    return <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Organizing Department/Club/Society</FormLabel><FormControl><Input placeholder="Enter department, club, or society name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />;
   };
 
   return (
@@ -449,7 +448,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                           type="date" 
                           {...field} 
                           disabled={isReadOnly} 
-                          min={today} // Added min attribute
+                          min={today}
                         />
                       </FormControl>
                       <FormMessage />
@@ -464,7 +463,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                           {...field} 
                           disabled={isReadOnly} 
                           value={field.value ?? ''} 
-                          min={today} // Added min attribute
+                          min={today}
                         />
                       </FormControl>
                       <FormMessage />
