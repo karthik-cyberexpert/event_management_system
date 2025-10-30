@@ -21,32 +21,66 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ClubDialog from '@/components/ClubDialog';
 import { toast } from 'sonner';
+import { Profile } from '@/contexts/AuthContext';
 
 type Club = {
   id: string;
   name: string;
 };
 
+type ClubDetails = Club & {
+  coordinators: Profile[];
+};
+
 const ManageClubs = () => {
-  const [clubs, setClubs] = useState<Club[]>([]);
+  const [clubs, setClubs] = useState<ClubDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
 
   const fetchClubs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    const { data: clubsData, error: clubsError } = await supabase
       .from('clubs')
       .select('*')
       .order('name', { ascending: true });
 
-    if (error) {
+    if (clubsError) {
       toast.error('Failed to fetch clubs.');
-    } else {
-      setClubs(data);
+      setLoading(false);
+      return;
     }
+    
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, role, club')
+      .eq('role', 'coordinator');
+
+    if (profilesError) {
+      toast.error('Failed to fetch coordinator roles.');
+      setLoading(false);
+      return;
+    }
+
+    const clubsWithDetails = clubsData.map(club => {
+      const coordinators = profilesData.filter(p => p.club === club.name);
+
+      return {
+        ...club,
+        coordinators,
+      };
+    });
+
+    setClubs(clubsWithDetails);
     setLoading(false);
   };
 
@@ -95,22 +129,43 @@ const ManageClubs = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Coordinators</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={3} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : clubs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center">No clubs found.</TableCell>
+                <TableCell colSpan={3} className="text-center">No clubs found.</TableCell>
               </TableRow>
             ) : (
               clubs.map((club) => (
                 <TableRow key={club.id}>
                   <TableCell className="font-medium">{club.name}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-start">
+                          {club.coordinators?.length || 0} { (club.coordinators?.length || 0) === 1 ? 'Coordinator' : 'Coordinators'}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {(club.coordinators?.length || 0) > 0 ? (
+                          club.coordinators.map(c => (
+                            <DropdownMenuItem key={c.id}>
+                              {c.first_name} {c.last_name}
+                            </DropdownMenuItem>
+                          ))
+                        ) : (
+                          <DropdownMenuItem disabled>No coordinators assigned</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(club)}>
                       <Edit className="h-4 w-4" />
