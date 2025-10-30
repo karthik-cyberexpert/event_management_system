@@ -30,6 +30,7 @@ import {
 import DepartmentDialog from '@/components/DepartmentDialog';
 import { toast } from 'sonner';
 import { Profile } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge'; // <-- Added missing import
 
 type Department = {
   id: string;
