@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter, // <-- Added DialogFooter here
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Download, Printer } from 'lucide-react';
