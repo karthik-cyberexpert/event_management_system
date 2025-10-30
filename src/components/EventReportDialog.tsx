@@ -75,7 +75,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
       
       {/* New Reference Number Line (Left Aligned) */}
       <div className="text-left mb-4">
-        <p className="text-sm font-medium text-gray-700">Ref: {referenceNumber}</p>
+        <p className="text-sm font-medium text-gray-700">{referenceNumber}</p>
       </div>
       
       {/* Form Title */}
