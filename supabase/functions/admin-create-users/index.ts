@@ -37,6 +37,12 @@ serve(async (req) => {
         results.push({ email, success: false, error: `Invalid role: '${role}'. Must be one of: ${VALID_ROLES.join(', ')}.` });
         continue;
       }
+      
+      // Coordinator specific validation: Must have either department OR club assigned
+      if (role === 'coordinator' && !department && !club) {
+        results.push({ email, success: false, error: 'Coordinator must be assigned to either a Department or a Club.' });
+        continue;
+      }
       // --- End Validation ---
 
       const profileDepartment = (role === 'coordinator' || role === 'hod') ? (department || null) : null;
