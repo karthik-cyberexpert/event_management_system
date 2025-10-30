@@ -136,6 +136,7 @@ const CoordinatorDashboard = () => {
   };
   
   const handleCancelSuccess = () => {
+    // Ensure state is cleared and events are fetched immediately
     fetchEvents();
     handleCancelDialogClose();
   };
