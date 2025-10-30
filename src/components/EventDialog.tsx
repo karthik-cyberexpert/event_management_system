@@ -88,10 +88,10 @@ const formSchema = z.object({
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
-  expected_audience: z.coerce.number().int().positive('Must be a positive number').optional(),
+  expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
   proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
   
-  budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional(),
+  budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
   funding_source_others: z.string().optional(),
   promotion_strategy: z.array(z.string()).min(1, 'Select at least one promotion strategy'),
@@ -225,8 +225,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       form.reset({
         ...event,
-        expected_audience: event.expected_audience || undefined,
-        budget_estimate: event.budget_estimate || undefined,
+        // Ensure optional number fields are explicitly set to null if undefined/null in DB
+        expected_audience: event.expected_audience ?? null,
+        budget_estimate: event.budget_estimate ?? null,
         
         // Parsed array fields
         category: parsedCategory.base,
@@ -257,6 +258,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         target_audience: [],
         funding_source: [],
         promotion_strategy: [],
+        // Explicitly reset optional number fields to undefined
+        expected_audience: undefined,
+        budget_estimate: undefined,
       });
     }
   }, [event, form]);
@@ -528,7 +532,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         placeholder="e.g., 100" 
                         {...field} 
                         disabled={isReadOnly}
-                        value={field.value ?? ''} 
+                        value={field.value === null || field.value === undefined ? '' : field.value} 
                         onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
@@ -654,7 +658,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         placeholder="0" 
                         {...field} 
                         disabled={isReadOnly}
-                        value={field.value ?? ''} 
+                        value={field.value === null || field.value === undefined ? '' : field.value} 
                         onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
