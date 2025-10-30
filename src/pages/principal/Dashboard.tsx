@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import EventActionDialog from '@/components/EventActionDialog';
+import EventLookup from '@/components/EventLookup';
 
 const statusColors = {
   pending_principal: 'bg-yellow-700',
@@ -56,52 +57,56 @@ const PrincipalDashboard = () => {
   };
 
   return (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">Final Event Approvals</h2>
-      
-      <div className="bg-white rounded-lg shadow">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Submitted By</TableHead>
-              <TableHead>Venue</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+    <div className="space-y-6">
+      <EventLookup />
+
+      <div>
+        <h2 className="text-3xl font-bold mb-6">Final Event Approvals</h2>
+        
+        <div className="bg-white rounded-lg shadow">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                <TableHead>Title</TableHead>
+                <TableHead>Submitted By</TableHead>
+                <TableHead>Venue</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ) : events.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">No pending events found.</TableCell>
-              </TableRow>
-            ) : (
-              events.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell className="font-medium">{event.title}</TableCell>
-                  <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                  <TableCell>{event.venues?.name || 'N/A'}</TableCell>
-                  <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white`}>
-                      {event.status.replace(/_/g, ' ').toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
-                      Review
-                    </Button>
-                  </TableCell>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : events.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">No pending events found.</TableCell>
+                </TableRow>
+              ) : (
+                events.map((event) => (
+                  <TableRow key={event.id}>
+                    <TableCell className="font-medium">{event.title}</TableCell>
+                    <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                    <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white`}>
+                        {event.status.replace(/_/g, ' ').toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedEvent(event)}>
+                        Review
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {selectedEvent && (

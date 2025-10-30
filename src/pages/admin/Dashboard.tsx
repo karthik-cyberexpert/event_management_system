@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import EventLookup from "@/components/EventLookup";
 
 const statusConfig: { [key: string]: { icon: React.ElementType; color: string; label: string } } = {
   approved: { icon: CheckCircle, color: "bg-green-100 text-green-800", label: "Approved" },
@@ -178,25 +179,8 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Activity Chart Placeholder */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-              Activity Overview
-            </CardTitle>
-            <CardDescription>Event creation trends (placeholder)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
-              <div className="text-center">
-                <TrendingUp className="mx-auto h-12 w-12 text-primary" />
-                <p className="mt-2 text-muted-foreground">Activity chart visualization</p>
-                <p className="text-sm text-muted-foreground">A chart of event trends would be displayed here.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Event Lookup */}
+        <EventLookup />
       </div>
     </div>
   );

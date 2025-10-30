@@ -53,7 +53,10 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
   };
 
   return (
-    <div className="p-4 bg-white text-black">
+    <div className="p-4 bg-white text-black relative">
+      <div className="absolute top-4 right-4 text-sm font-mono bg-gray-100 p-2 rounded border">
+        ID: {data.unique_code || 'N/A'}
+      </div>
       {/* College Header */}
       <div className="text-center mb-2">
         <h1 className="text-lg font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
@@ -125,13 +128,13 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
   const reportRef = useRef<HTMLDivElement>(null);
 
   const fetchReportData = async () => {
-    if (!event || event.status !== 'approved') return;
+    if (!event) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('events')
         .select(`
-          id, title, description, venue_id, event_date, start_time, end_time, 
+          id, title, description, venue_id, event_date, start_time, end_time, unique_code,
           expected_audience, status, remarks, submitted_by, created_at, updated_at, 
           department_club, coordinator_name, coordinator_contact, mode_of_event, 
           category, objective, sdg_alignment, target_audience, proposed_outcomes, 
@@ -211,7 +214,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
             </div>
           ) : (
             <div className="text-center py-10 text-red-500">
-              Error loading report or event is not approved.
+              Error loading report data.
             </div>
           )}
           <DialogFooter className="print:hidden">
