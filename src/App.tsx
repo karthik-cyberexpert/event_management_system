@@ -10,13 +10,12 @@ import { MadeWithDyad } from "./components/made-with-dyad";
 import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
-import ApprovedEvents from "./pages/ApprovedEvents";
+import AllEvents from "./pages/AllEvents"; // Updated import
 import ProfilePage from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
-import EventsOverview from "./pages/EventsOverview";
 
 const queryClient = new QueryClient();
 
@@ -44,11 +43,8 @@ const AppRoutes = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/approved-events" element={<ApprovedEvents />} />
-                <Route path="/events-overview" element={<EventsOverview />} />
+                <Route path="/all-events" element={<AllEvents />} />
                 
-                {/* Removed My Approvals Route */}
-
                 {profile?.role === 'admin' && (
                   <>
                     <Route path="/venues" element={<ManageVenues />} />
