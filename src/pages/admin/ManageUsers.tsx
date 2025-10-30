@@ -50,20 +50,20 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Query the new admin_user_list view to get profiles and emails
-    const { data, error } = await supabase
-      .from('admin_user_list')
-      .select('*')
-      .order('first_name', { ascending: true });
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-fetch-users');
 
-    if (error) {
-      toast.error('Failed to fetch users.');
-      console.error(error);
-    } else {
-      // The data structure now directly matches UserWithEmail
+      if (error) throw error;
+      
+      // The Edge Function returns the combined array of users with emails
       setUsers(data as UserWithEmail[]);
+
+    } catch (error: any) {
+      toast.error(`Failed to fetch users: ${error.message}`);
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -71,7 +71,6 @@ const ManageUsers = () => {
   }, []);
 
   const handleEdit = (user: Profile) => {
-    // We pass the profile data (which includes email from the view) to the dialog
     setSelectedUser(user);
     setIsUserDialogOpen(true);
   };
