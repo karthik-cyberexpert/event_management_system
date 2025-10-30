@@ -23,10 +23,24 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
-const ReportRow = ({ label, children }: { label: string; children: React.ReactNode }) => {
-  const displayValue = (typeof children === 'string' && children.trim() === '') || children === null || children === undefined
-    ? 'N/A'
-    : children;
+// Rebuilt ReportRow to handle different data types internally for robustness
+const ReportRow = ({ label, value }: { label: string; value: any }) => {
+  let displayValue: React.ReactNode = 'N/A';
+
+  if (value) {
+    if (Array.isArray(value) && value.length > 0) {
+      displayValue = value.map(item => String(item).charAt(0).toUpperCase() + String(item).slice(1).replace(/_/g, ' ')).join(', ');
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      displayValue = value;
+    } else if (typeof value === 'number') {
+      displayValue = value.toString();
+    } else if (value instanceof Date) {
+      displayValue = format(value, 'PPP p');
+    } else if (typeof value === 'object' && !Array.isArray(value)) {
+        // This will handle the ReactNode for lists
+        displayValue = value;
+    }
+  }
 
   return (
     <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
@@ -39,18 +53,10 @@ const ReportRow = ({ label, children }: { label: string; children: React.ReactNo
 const EventReportContent = ({ data }: { data: ReportData }) => {
   if (!data) return null;
 
-  const formatArray = (arr: string[] | null | undefined) => {
-    if (!arr || arr.length === 0) return '';
-    return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
-  };
-
   const formatApproval = (timestamp: string | null) => {
     if (!timestamp) return 'Pending';
     return `Approved on ${format(new Date(timestamp), 'PPP p')}`;
   };
-
-  const description = String(data.description || '').trim();
-  const sdgAlignment = Array.isArray(data.sdg_alignment) ? data.sdg_alignment : [];
 
   return (
     <div className="p-6 bg-white text-black">
@@ -60,47 +66,43 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
       </header>
 
       <div className="space-y-1">
-        <ReportRow label="Department/Club">{data.department_club}</ReportRow>
-        <ReportRow label="Mode of Event"><span className="capitalize">{data.mode_of_event}</span></ReportRow>
-        <ReportRow label="Date">{format(new Date(data.event_date), 'PPP')}</ReportRow>
-        <ReportRow label="Time">{data.start_time} - {data.end_time}</ReportRow>
-        <ReportRow label="Venue">
-          {data.venues?.name 
-            ? `${data.venues.name} (${data.venues.location || 'N/A'})` 
-            : 'N/A'}
-        </ReportRow>
-        <ReportRow label="Expected Participants">{data.expected_audience}</ReportRow>
-        <ReportRow label="Description">{description}</ReportRow>
-        <ReportRow label="Objective">{data.objective}</ReportRow>
-        <ReportRow label="Proposed Outcomes">{data.proposed_outcomes}</ReportRow>
-        <ReportRow label="Category">{formatArray(data.category)}</ReportRow>
-        <ReportRow label="Target Audience">{formatArray(data.target_audience)}</ReportRow>
-        <ReportRow label="SDG Alignment">{formatArray(sdgAlignment)}</ReportRow>
-        <ReportRow label="Coordinators">
-          {(data.coordinator_name || []).length > 0 ? (
+        <ReportRow label="Department/Club" value={data.department_club} />
+        <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
+        <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
+        <ReportRow label="Time" value={`${data.start_time} - ${data.end_time}`} />
+        <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
+        <ReportRow label="Expected Participants" value={data.expected_audience} />
+        <ReportRow label="Description" value={data.description} />
+        <ReportRow label="Objective" value={data.objective} />
+        <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
+        <ReportRow label="Category" value={data.category} />
+        <ReportRow label="Target Audience" value={data.target_audience} />
+        <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
+        <ReportRow label="Coordinators" value={
+          (data.coordinator_name || []).length > 0 ? (
             <ul className="list-disc list-inside">
               {(data.coordinator_name || []).map((name: string, index: number) => (
                 <li key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</li>
               ))}
             </ul>
-          ) : ''}
-        </ReportRow>
-        <ReportRow label="Speakers/Resource Persons">
-          {(data.speakers || []).length > 0 ? (
+          ) : 'N/A'
+        } />
+        <ReportRow label="Speakers/Resource Persons" value={
+          (data.speakers || []).length > 0 ? (
             <ul className="list-disc list-inside">
               {(data.speakers || []).map((name: string, index: number) => (
                 <li key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</li>
               ))}
             </ul>
-          ) : ''}
-        </ReportRow>
-        <ReportRow label="Budget Estimate">₹{data.budget_estimate?.toFixed(2) || '0.00'}</ReportRow>
-        <ReportRow label="Funding Source">{data.budget_estimate > 0 ? formatArray(data.funding_source) : 'N/A (No budget)'}</ReportRow>
-        <ReportRow label="Promotion Strategy">{formatArray(data.promotion_strategy)}</ReportRow>
-        <ReportRow label="HOD Approval">{formatApproval(data.hod_approval_at)}</ReportRow>
-        <ReportRow label="Dean Approval">{formatApproval(data.dean_approval_at)}</ReportRow>
-        <ReportRow label="Principal Approval">{formatApproval(data.principal_approval_at)}</ReportRow>
-        <ReportRow label="Final Remarks">{data.remarks}</ReportRow>
+          ) : 'N/A'
+        } />
+        <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
+        <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
+        <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
+        <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
+        <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
+        <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
+        <ReportRow label="Final Remarks" value={data.remarks} />
       </div>
     </div>
   );
@@ -115,10 +117,16 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     if (!event || event.status !== 'approved') return;
     setLoading(true);
     try {
+      // Using a fully explicit query to ensure all columns are fetched
       const { data, error } = await supabase
         .from('events')
         .select(`
-          *,
+          id, title, description, venue_id, event_date, start_time, end_time, 
+          expected_audience, status, remarks, submitted_by, created_at, updated_at, 
+          department_club, coordinator_name, coordinator_contact, mode_of_event, 
+          category, objective, sdg_alignment, target_audience, proposed_outcomes, 
+          speakers, speaker_details, budget_estimate, funding_source, promotion_strategy, 
+          hod_approval_at, dean_approval_at, principal_approval_at,
           venues ( name, location )
         `)
         .eq('id', event.id)
@@ -184,7 +192,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
             <DialogDescription>
               Official report containing all event details and approval statuses.
             </DialogDescription>
-          </DialogHeader>
+          </Header>
           {loading && !reportData ? (
             <div className="text-center py-10">Loading report...</div>
           ) : reportData ? (
@@ -197,7 +205,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
             </div>
           )}
           <DialogFooter className="print:hidden">
-            <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button 
               onClick={handleDownloadPdf} 
               disabled={loading || !reportData}
