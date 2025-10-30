@@ -151,7 +151,7 @@ const EventsOverview = () => {
                 <TableRow key={event.id}>
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                  <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                  <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                   <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                   <TableCell>
                     <Badge className={`${statusColors[event.status]} text-white`}>

@@ -208,7 +208,7 @@ const CoordinatorDashboard = () => {
                   myEvents.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell className="font-medium">{event.title}</TableCell>
-                      <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                      <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                       <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                       <TableCell>
                         <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-primary-foreground`}>

@@ -32,6 +32,7 @@ const ApprovedEvents = () => {
           start_time,
           end_time,
           unique_code,
+          other_venue_details,
           venues ( name ),
           submitted_by:profiles ( first_name, last_name )
         `)
@@ -106,7 +107,7 @@ const ApprovedEvents = () => {
                         <TableCell className="font-mono text-xs">{event.unique_code || 'N/A'}</TableCell>
                         <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                         <TableCell>{event.start_time} - {event.end_time}</TableCell>
-                        <TableCell>{event.venues?.name || 'N/A'}</TableCell>
+                        <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                         <TableCell>{event.coordinator?.first_name} {event.coordinator?.last_name}</TableCell>
                       </TableRow>
                     ))
