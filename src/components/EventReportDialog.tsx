@@ -24,7 +24,6 @@ type EventReportDialogProps = {
 type ReportData = any;
 
 const ReportRow = ({ label, children }: { label: string; children: React.ReactNode }) => {
-  // Check if children is null, undefined, or an empty string (after trimming if it's a string)
   const displayValue = (typeof children === 'string' && children.trim() === '') || children === null || children === undefined
     ? 'N/A'
     : children;
@@ -41,7 +40,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
   if (!data) return null;
 
   const formatArray = (arr: string[] | null | undefined) => {
-    if (!arr || arr.length === 0) return ''; // Return empty string so ReportRow can handle 'N/A'
+    if (!arr || arr.length === 0) return '';
     return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
   };
 
@@ -50,10 +49,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
     return `Approved on ${format(new Date(timestamp), 'PPP p')}`;
   };
 
-  // Ensure description is treated as a string
   const description = String(data.description || '').trim();
-  
-  // Ensure SDG alignment is treated as an array
   const sdgAlignment = Array.isArray(data.sdg_alignment) ? data.sdg_alignment : [];
 
   return (
@@ -119,9 +115,15 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     if (!event || event.status !== 'approved') return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-event-report', {
-        body: { event_id: event.id },
-      });
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          venues ( name, location )
+        `)
+        .eq('id', event.id)
+        .single();
+
       if (error) throw error;
       setReportData(data);
     } catch (error: any) {
