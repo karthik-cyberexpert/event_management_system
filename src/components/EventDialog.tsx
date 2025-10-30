@@ -629,18 +629,17 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
               {/* 9. Objective of the Event */}
               <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Description & Goals</h3>
                 <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               
-              {/* 10. Key Indicator (Using Description field for now, as 'key indicator' is not a separate DB field) */}
+              {/* 10. Key Indicator / Detailed Description */}
               <div className="space-y-4 md:col-span-2">
                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Key Indicator / Detailed Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
               </div>
 
               {/* 11. Alignment with SDGs */}
               <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs (Optional)</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
                 <FormField control={form.control} name="sdg_alignment" render={() => (
                   <FormItem>
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
