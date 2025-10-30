@@ -80,7 +80,7 @@ const formSchema = z.object({
   speakers_list: z.array(speakerSchema).optional(),
 
   // New fields
-  department_club: z.string().min(1, 'Organizing body is required'),
+  department_club: z.string().min(1, 'Department/Club is required'),
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
@@ -128,13 +128,14 @@ type EventDialogProps = {
   onClose: () => void;
   onSuccess: () => void;
   event?: any | null;
-  mode: 'create' | 'edit' | 'view';
+  mode: 'create' | 'edit' | 'view'; // Added mode prop
 };
 
 const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogProps) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
 
@@ -151,7 +152,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       sdg_alignment: [], // Ensure default is []
       target_audience: [], // Ensure default is []
       target_audience_others: '',
-      // Initialize optional numeric fields to 0 or undefined based on context
       expected_audience: undefined,
       proposed_outcomes: '',
       budget_estimate: undefined,
@@ -180,8 +180,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
   const budgetEstimate = form.watch('budget_estimate');
   const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
-  const canSelectDepartment = !!profile?.department;
-  const canSelectClub = !!profile?.club;
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -227,7 +225,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       form.reset({
         ...event,
-        // Ensure numeric fields are handled as numbers or undefined
         expected_audience: event.expected_audience || undefined,
         budget_estimate: event.budget_estimate || undefined,
         
@@ -251,40 +248,18 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '' }],
       });
     } else {
-      let defaultOrganizer = '';
-      if (profile?.department && !profile.club) {
-        defaultOrganizer = profile.department;
-      } else if (!profile?.department && profile?.club) {
-        defaultOrganizer = profile.club;
-      }
-
       form.reset({
-        title: '',
-        description: '',
-        department_club: defaultOrganizer,
-        mode_of_event: undefined,
-        category: [],
-        category_others: '',
-        objective: '',
-        sdg_alignment: [],
-        target_audience: [],
-        target_audience_others: '',
-        expected_audience: undefined,
-        proposed_outcomes: '',
-        budget_estimate: undefined,
-        funding_source: [],
-        funding_source_others: '',
-        promotion_strategy: [],
-        promotion_strategy_others: '',
-        venue_id: '',
-        event_date: '',
-        start_time: '',
-        end_time: '',
         coordinators: [{ name: '', contact: '' }],
         speakers_list: [{ name: '', details: '' }],
+        // Ensure all array fields are explicitly reset to [] if not provided in defaultValues
+        category: [],
+        sdg_alignment: [],
+        target_audience: [],
+        funding_source: [],
+        promotion_strategy: [],
       });
     }
-  }, [event, form, profile]);
+  }, [event, form]);
 
   const onSubmit = async (values: FormSchema) => {
     if (!user) return;
@@ -334,7 +309,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       speakers: speakerNames, // Array of names
       speaker_details: speakerDetails, // Array of details
       budget_estimate: values.budget_estimate || 0,
-      funding_source: values.budget_estimate && values.budget_estimate > 0 ? finalFunding : null,
+      funding_source: finalFunding,
       promotion_strategy: finalPromotion,
       
       // Reset approval timestamps on resubmit
@@ -345,21 +320,16 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     // --- End Data Transformation ---
 
     // Check venue availability, excluding the current event if in edit mode
-    const rpcParams: { [key: string]: any } = {
+    const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
       p_venue_id: values.venue_id,
       p_event_date: values.event_date,
       p_start_time: values.start_time,
       p_end_time: values.end_time,
-    };
-
-    if (isEditMode && event.id) {
-      rpcParams.p_event_id = event.id;
-    }
-
-    const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', rpcParams);
+      p_event_id: isEditMode ? event.id : null,
+    });
 
     if (checkError || !isAvailable) {
-      toast.error(checkError?.message || 'Venue is not available at the selected date and time.');
+      toast.error('Venue is not available at the selected date and time.');
       setIsSubmitting(false);
       return;
     }
@@ -431,54 +401,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                
-                {(canSelectDepartment || canSelectClub) ? (
-                  <FormField
-                    control={form.control}
-                    name="department_club"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>Organized By</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            className="flex flex-col space-y-2"
-                            disabled={isReadOnly}
-                          >
-                            {canSelectDepartment && (
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value={profile!.department!} />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {profile!.department} (Department)
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                            {canSelectClub && (
-                              <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value={profile!.club!} />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {profile!.club} (Club)
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <FormItem>
-                    <FormLabel>Organized By</FormLabel>
-                    <p className="text-sm text-muted-foreground pt-2">You must be assigned to a department or club to create an event.</p>
-                  </FormItem>
-                )}
-
+                <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Department/Club</FormLabel><FormControl><Input placeholder="e.g., Computer Science Department" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
               </div>
@@ -605,11 +528,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         placeholder="e.g., 100" 
                         {...field} 
                         disabled={isReadOnly}
-                        value={field.value === undefined ? '' : String(field.value)} 
-                        onChange={e => {
-                          const value = e.target.value;
-                          field.onChange(value === '' ? undefined : +value);
-                        }}
+                        value={field.value ?? ''} 
+                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -734,11 +654,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         placeholder="0" 
                         {...field} 
                         disabled={isReadOnly}
-                        value={field.value === undefined ? '' : String(field.value)} 
-                        onChange={e => {
-                          const value = e.target.value;
-                          field.onChange(value === '' ? undefined : +value);
-                        }}
+                        value={field.value ?? ''} 
+                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
