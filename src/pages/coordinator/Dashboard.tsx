@@ -53,12 +53,22 @@ const CoordinatorDashboard = () => {
     // Fetch user's events
     const { data: myEventsData, error: myEventsError } = await supabase
       .from('events')
-      .select('*, venues(name)')
+      .select(`
+        *, 
+        venues(name),
+        submitted_by:profiles ( first_name, last_name )
+      `)
       .eq('submitted_by', user.id)
       .order('created_at', { ascending: false });
 
     if (myEventsError) console.error('Error fetching my events:', myEventsError);
-    else setMyEvents(myEventsData);
+    else {
+      const mappedData = myEventsData.map(event => ({
+        ...event,
+        profiles: event.submitted_by, // Map submitted_by object to 'profiles' for consistency if needed elsewhere
+      }));
+      setMyEvents(mappedData);
+    }
 
     // Fetch all approved events for the calendar
     const { data: approvedEventsData, error: approvedEventsError } = await supabase

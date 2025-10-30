@@ -389,8 +389,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   };
 
   const getDialogDescription = () => {
+    const submitterName = event?.profiles ? `${event.profiles.first_name} ${event.profiles.last_name}` : 'N/A';
+    
     switch (mode) {
-      case 'view': return `Viewing details for: ${event?.title || 'event'}.`;
+      case 'view': return `Viewing details for: ${event?.title || 'event'}. Submitted by: ${submitterName}`;
       case 'edit': return 'Make changes and resubmit for approval.';
       case 'create': default: return 'Fill out the form below to create a new event.';
     }
