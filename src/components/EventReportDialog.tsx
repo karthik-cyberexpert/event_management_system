@@ -37,7 +37,7 @@ const ReportRow = ({ label, value }: { label: string; value: any }) => {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0">
+    <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0 last:border-b-0">
       <div className="font-semibold text-sm text-gray-600">{label}</div>
       <div className="col-span-2 text-sm text-gray-800">{processValue(value)}</div>
     </div>
@@ -51,6 +51,14 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
     if (!timestamp) return 'Pending';
     return `Approved on ${format(new Date(timestamp), 'PPP p')}`;
   };
+  
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
+  const academicYear = `${currentYear}-${nextYear}`;
+  const departmentClub = data.department_club || 'N/A';
+  const uniqueId = data.unique_code || 'N/A';
+  const referenceNumber = `ACE/IQAC/Events/${academicYear}/${departmentClub}/${uniqueId}`;
+
 
   return (
     <div className="p-4 bg-white text-black relative">
@@ -63,6 +71,11 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
         <p className="text-sm text-gray-600">(An Autonomous Institution)</p>
         <p className="text-sm text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
         <h2 className="text-base font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
+      </div>
+      
+      {/* New Reference Number Line (Left Aligned) */}
+      <div className="text-left mb-4">
+        <p className="text-sm font-medium text-gray-700">Ref: {referenceNumber}</p>
       </div>
       
       {/* Form Title */}
