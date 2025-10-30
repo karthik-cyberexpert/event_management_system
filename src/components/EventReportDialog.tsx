@@ -90,20 +90,20 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
         <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
         <ReportRow label="Coordinators" value={
           (data.coordinator_name || []).length > 0 ? (
-            <ul className="list-disc list-inside">
+            <div className="space-y-1">
               {(data.coordinator_name || []).map((name: string, index: number) => (
-                <li key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</li>
+                <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
               ))}
-            </ul>
+            </div>
           ) : null // Let ReportRow handle the 'N/A'
         } />
         <ReportRow label="Speakers/Resource Persons" value={
           (data.speakers || []).length > 0 ? (
-            <ul className="list-disc list-inside">
+            <div className="space-y-1">
               {(data.speakers || []).map((name: string, index: number) => (
-                <li key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</li>
+                <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
               ))}
-            </ul>
+            </div>
           ) : null // Let ReportRow handle the 'N/A'
         } />
         <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
