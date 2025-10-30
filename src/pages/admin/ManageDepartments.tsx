@@ -21,9 +21,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import DepartmentDialog from '@/components/DepartmentDialog';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { Profile } from '@/contexts/AuthContext';
 
 type Department = {
   id: string;
@@ -31,24 +38,56 @@ type Department = {
   degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA';
 };
 
+type DepartmentDetails = Department & {
+  hod: Profile | null;
+  coordinators: Profile[];
+};
+
 const ManageDepartments = () => {
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<DepartmentDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
   const fetchDepartments = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    const { data: departmentsData, error: departmentsError } = await supabase
       .from('departments')
       .select('*')
       .order('name', { ascending: true });
 
-    if (error) {
+    if (departmentsError) {
       toast.error('Failed to fetch departments.');
-    } else {
-      setDepartments(data);
+      setLoading(false);
+      return;
     }
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, role, department')
+      .in('role', ['hod', 'coordinator']);
+
+    if (profilesError) {
+      toast.error('Failed to fetch user roles.');
+      setLoading(false);
+      return;
+    }
+
+    const departmentsWithDetails = departmentsData.map(dept => {
+      const departmentIdentifier = `${dept.name} (${dept.degree})`;
+
+      const hod = profilesData.find(p => p.role === 'hod' && p.department === departmentIdentifier) || null;
+      const coordinators = profilesData.filter(p => p.role === 'coordinator' && p.department === departmentIdentifier);
+
+      return {
+        ...dept,
+        hod,
+        coordinators,
+      };
+    });
+
+    setDepartments(departmentsWithDetails);
     setLoading(false);
   };
 
@@ -98,17 +137,19 @@ const ManageDepartments = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Degree</TableHead>
+              <TableHead>HOD</TableHead>
+              <TableHead>Coordinators</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : departments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">No departments found.</TableCell>
+                <TableCell colSpan={5} className="text-center">No departments found.</TableCell>
               </TableRow>
             ) : (
               departments.map((department) => (
@@ -116,6 +157,29 @@ const ManageDepartments = () => {
                   <TableCell className="font-medium">{department.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{department.degree}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {department.hod ? `${department.hod.first_name} ${department.hod.last_name}` : <span className="text-muted-foreground">Not Assigned</span>}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-start">
+                          {department.coordinators.length} {department.coordinators.length === 1 ? 'Coordinator' : 'Coordinators'}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {department.coordinators.length > 0 ? (
+                          department.coordinators.map(c => (
+                            <DropdownMenuItem key={c.id}>
+                              {c.first_name} {c.last_name}
+                            </DropdownMenuItem>
+                          ))
+                        ) : (
+                          <DropdownMenuItem disabled>No coordinators assigned</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(department)}>
