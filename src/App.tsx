@@ -17,7 +17,6 @@ import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
 import EventsOverview from "./pages/EventsOverview";
-import MyApprovals from "./pages/MyApprovals";
 
 const queryClient = new QueryClient();
 
@@ -48,9 +47,7 @@ const AppRoutes = () => {
                 <Route path="/approved-events" element={<ApprovedEvents />} />
                 <Route path="/events-overview" element={<EventsOverview />} />
                 
-                {(profile?.role === 'hod' || profile?.role === 'dean' || profile?.role === 'principal') && (
-                  <Route path="/my-approvals" element={<MyApprovals />} />
-                )}
+                {/* Removed My Approvals Route */}
 
                 {profile?.role === 'admin' && (
                   <>
