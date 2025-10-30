@@ -23,32 +23,16 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
-// Completely rebuilt ReportRow for robust data handling
 const ReportRow = ({ label, value }: { label: string; value: any }) => {
   const processValue = (val: any): React.ReactNode => {
-    // Explicitly check for null or undefined first
-    if (val === null || val === undefined) {
-      return 'N/A';
-    }
-
-    // Handle arrays
+    if (val === null || val === undefined) return 'N/A';
     if (Array.isArray(val)) {
       return val.length > 0
         ? val.map(item => String(item).charAt(0).toUpperCase() + String(item).slice(1).replace(/_/g, ' ')).join(', ')
         : 'N/A';
     }
-
-    // Handle strings (including empty or whitespace-only)
-    if (typeof val === 'string') {
-      return val.trim() === '' ? 'N/A' : val;
-    }
-    
-    // Handle React nodes (for custom lists)
-    if (typeof val === 'object' && val !== null) {
-      return val;
-    }
-
-    // Handle numbers and other primitives
+    if (typeof val === 'string') return val.trim() === '' ? 'N/A' : val;
+    if (typeof val === 'object' && val !== null) return val;
     return String(val);
   };
 
@@ -70,49 +54,66 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
 
   return (
     <div className="p-6 bg-white text-black">
-      <header className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">{data.title}</h1>
-        <p className="text-lg text-gray-500 mt-1">Event Approval Report</p>
-      </header>
+      {/* College Header */}
+      <div className="text-center mb-4">
+        <h1 className="text-xl font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
+        <p className="text-md text-gray-600">(An Autonomous Institution)</p>
+        <p className="text-md text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
+        <h2 className="text-lg font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
+      </div>
+      
+      {/* Form Title */}
+      <h3 className="text-center text-lg font-bold underline mb-6">Event Registration and Approval Form</h3>
 
-      <div className="space-y-1">
-        <ReportRow label="Department/Club" value={data.department_club} />
-        <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
-        <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
-        <ReportRow label="Time" value={`${data.start_time} - ${data.end_time}`} />
-        <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
-        <ReportRow label="Expected Participants" value={data.expected_audience} />
-        <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
-        <ReportRow label="Objective" value={data.objective} />
-        <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
-        <ReportRow label="Category" value={data.category} />
-        <ReportRow label="Target Audience" value={data.target_audience} />
-        <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
-        <ReportRow label="Coordinators" value={
-          (data.coordinator_name || []).length > 0 ? (
-            <div className="space-y-1">
-              {(data.coordinator_name || []).map((name: string, index: number) => (
-                <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
-              ))}
-            </div>
-          ) : null // Let ReportRow handle the 'N/A'
-        } />
-        <ReportRow label="Speakers/Resource Persons" value={
-          (data.speakers || []).length > 0 ? (
-            <div className="space-y-1">
-              {(data.speakers || []).map((name: string, index: number) => (
-                <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
-              ))}
-            </div>
-          ) : null // Let ReportRow handle the 'N/A'
-        } />
-        <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
-        <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
-        <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
-        <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
-        <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
-        <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
-        <ReportRow label="Final Remarks" value={data.remarks} />
+      {/* Bordered Content */}
+      <div className="border border-gray-400">
+        {/* Table Headers */}
+        <div className="grid grid-cols-3 gap-4 p-3 bg-gray-100 border-b border-gray-400 font-bold text-sm">
+          <div className="col-span-1">Section</div>
+          <div className="col-span-2">Details</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="p-3">
+          <ReportRow label="Event Title" value={data.title} />
+          <ReportRow label="Department/Club" value={data.department_club} />
+          <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
+          <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
+          <ReportRow label="Time" value={`${data.start_time} - ${data.end_time}`} />
+          <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
+          <ReportRow label="Expected Participants" value={data.expected_audience} />
+          <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
+          <ReportRow label="Objective" value={data.objective} />
+          <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
+          <ReportRow label="Category" value={data.category} />
+          <ReportRow label="Target Audience" value={data.target_audience} />
+          <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
+          <ReportRow label="Coordinators" value={
+            (data.coordinator_name || []).length > 0 ? (
+              <div className="space-y-1">
+                {(data.coordinator_name || []).map((name: string, index: number) => (
+                  <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
+                ))}
+              </div>
+            ) : null
+          } />
+          <ReportRow label="Speakers/Resource Persons" value={
+            (data.speakers || []).length > 0 ? (
+              <div className="space-y-1">
+                {(data.speakers || []).map((name: string, index: number) => (
+                  <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
+                ))}
+              </div>
+            ) : null
+          } />
+          <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
+          <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
+          <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
+          <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
+          <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
+          <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
+          <ReportRow label="Final Remarks" value={data.remarks} />
+        </div>
       </div>
     </div>
   );
