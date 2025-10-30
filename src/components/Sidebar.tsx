@@ -19,7 +19,6 @@ const navLinks = {
     { to: '/users', label: 'Manage Users', icon: Users },
     { to: '/departments', label: 'Manage Departments', icon: Building },
     { to: '/clubs', label: 'Manage Clubs', icon: ClipboardList },
-    { to: '/theme-demo', label: 'Theme Demo', icon: Palette },
   ],
   coordinator: [
     { to: '/', label: 'My Events', icon: Home },
