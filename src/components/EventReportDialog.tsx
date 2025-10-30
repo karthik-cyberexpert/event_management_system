@@ -50,6 +50,12 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
     return `Approved on ${format(new Date(timestamp), 'PPP p')}`;
   };
 
+  // Ensure description is treated as a string
+  const description = String(data.description || '').trim();
+  
+  // Ensure SDG alignment is treated as an array
+  const sdgAlignment = Array.isArray(data.sdg_alignment) ? data.sdg_alignment : [];
+
   return (
     <div className="p-6 bg-white text-black">
       <header className="text-center mb-8">
@@ -68,12 +74,12 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
             : 'N/A'}
         </ReportRow>
         <ReportRow label="Expected Participants">{data.expected_audience}</ReportRow>
-        <ReportRow label="Description">{data.description}</ReportRow>
+        <ReportRow label="Description">{description}</ReportRow>
         <ReportRow label="Objective">{data.objective}</ReportRow>
         <ReportRow label="Proposed Outcomes">{data.proposed_outcomes}</ReportRow>
         <ReportRow label="Category">{formatArray(data.category)}</ReportRow>
         <ReportRow label="Target Audience">{formatArray(data.target_audience)}</ReportRow>
-        <ReportRow label="SDG Alignment">{formatArray(data.sdg_alignment)}</ReportRow>
+        <ReportRow label="SDG Alignment">{formatArray(sdgAlignment)}</ReportRow>
         <ReportRow label="Coordinators">
           {(data.coordinator_name || []).length > 0 ? (
             <ul className="list-disc list-inside">
