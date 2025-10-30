@@ -179,6 +179,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const isReadOnly = mode === 'view';
   const isCoordinator = profile?.role === 'coordinator';
 
+  // Calculate today's date in YYYY-MM-DD format for min attribute
+  const today = format(new Date(), 'yyyy-MM-dd');
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -438,8 +441,35 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="event_date" render={({ field }) => (<FormItem><FormLabel>From Date</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="end_date" render={({ field }) => (<FormItem><FormLabel>To Date (optional)</FormLabel><FormControl><Input type="date" {...field} disabled={isReadOnly} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="event_date" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>From Date</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field} 
+                          disabled={isReadOnly} 
+                          min={today} // Added min attribute
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="end_date" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>To Date (optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field} 
+                          disabled={isReadOnly} 
+                          value={field.value ?? ''} 
+                          min={today} // Added min attribute
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
