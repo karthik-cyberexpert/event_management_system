@@ -132,12 +132,13 @@ type EventDialogProps = {
 };
 
 const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
+  const isCoordinator = profile?.role === 'coordinator';
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -181,6 +182,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const budgetEstimate = form.watch('budget_estimate');
   const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
 
+  // Determine available options for Department/Club based on user profile
+  const departmentOption = profile?.department;
+  const clubOption = profile?.club;
+  const hasMultipleOptions = !!departmentOption && !!clubOption;
+  
   useEffect(() => {
     const fetchVenues = async () => {
       const { data, error } = await supabase.from('venues').select('id, name');
@@ -249,9 +255,18 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '' }],
       });
     } else {
+      // Set default department/club if only one is available
+      let defaultDeptClub = '';
+      if (departmentOption && !clubOption) {
+        defaultDeptClub = departmentOption;
+      } else if (clubOption && !departmentOption) {
+        defaultDeptClub = clubOption;
+      }
+
       form.reset({
         coordinators: [{ name: '', contact: '' }],
         speakers_list: [{ name: '', details: '' }],
+        department_club: defaultDeptClub, // Set default value here
         // Ensure all array fields are explicitly reset to [] if not provided in defaultValues
         category: [],
         sdg_alignment: [],
@@ -263,7 +278,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         budget_estimate: undefined,
       });
     }
-  }, [event, form]);
+  }, [event, form, departmentOption, clubOption]);
 
   const onSubmit = async (values: FormSchema) => {
     if (!user) return;
@@ -381,6 +396,73 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     }
   };
 
+  const renderDepartmentClubField = () => {
+    if (isReadOnly) {
+      return (
+        <FormItem>
+          <FormLabel>Department/Club</FormLabel>
+          <Input value={event.department_club || 'N/A'} disabled />
+        </FormItem>
+      );
+    }
+
+    if (!isCoordinator) {
+      return (
+        <Alert variant="destructive">
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>Only users with the 'coordinator' role can create events.</AlertDescription>
+        </Alert>
+      );
+    }
+
+    const options: { label: string; value: string }[] = [];
+    if (departmentOption) {
+      options.push({ label: `Department: ${departmentOption}`, value: departmentOption });
+    }
+    if (clubOption) {
+      options.push({ label: `Club: ${clubOption}`, value: clubOption });
+    }
+
+    if (options.length === 0) {
+      return (
+        <Alert variant="destructive">
+          <AlertTitle>Missing Assignment</AlertTitle>
+          <AlertDescription>Your coordinator profile is not assigned to a Department or Club. Please contact an administrator.</AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <FormField
+        control={form.control}
+        name="department_club"
+        render={({ field }) => (
+          <FormItem className="space-y-3">
+            <FormLabel>Organizing Body</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className={cn("flex flex-col space-y-2", options.length > 1 && "sm:flex-row sm:space-x-4 sm:space-y-0")}
+                disabled={isReadOnly || options.length === 1}
+              >
+                {options.map(option => (
+                  <FormItem key={option.value} className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value={option.value} />
+                    </FormControl>
+                    <FormLabel className="font-normal">{option.label}</FormLabel>
+                  </FormItem>
+                ))}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -403,9 +485,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
               {/* --- Basic Info --- */}
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Event Details</h3>
+                {renderDepartmentClubField()}
                 <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Department/Club</FormLabel><FormControl><Input placeholder="e.g., Computer Science Department" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
               </div>
