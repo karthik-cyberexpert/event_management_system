@@ -95,3 +95,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body {
+    margin: 0;
+    padding: 1rem;
+  }
+}
