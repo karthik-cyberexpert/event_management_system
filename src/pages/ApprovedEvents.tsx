@@ -40,9 +40,11 @@ const ApprovedEvents = () => {
       if (error) {
         console.error('Error fetching approved events:', error);
       } else {
+        // The query returns the profile data under the alias 'submitted_by'.
+        // We map it to 'coordinator' for clearer use in the component.
         const mappedData = data.map(event => ({
           ...event,
-          profiles: event.submitted_by,
+          coordinator: event.submitted_by,
         }));
         setEvents(mappedData);
       }
@@ -98,7 +100,7 @@ const ApprovedEvents = () => {
                         <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                         <TableCell>{event.start_time} - {event.end_time}</TableCell>
                         <TableCell>{event.venues?.name || 'N/A'}</TableCell>
-                        <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                        <TableCell>{event.coordinator?.first_name} {event.coordinator?.last_name}</TableCell>
                       </TableRow>
                     ))
                   )}
