@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, isPast, isToday } from 'date-fns';
 
 type RevokeApprovalDialogProps = {
   event: any;
@@ -26,33 +26,7 @@ const RevokeApprovalDialog = ({ event, isOpen, onClose, onRevokeSuccess, role }:
   const handleRevoke = async () => {
     setIsSubmitting(true);
     
-    let newStatus: 'pending_hod' | 'pending_dean' | 'pending_principal';
-    let timestampFieldToClear: 'hod_approval_at' | 'dean_approval_at' | 'principal_approval_at';
-    let nextStatus: 'pending_hod' | 'pending_dean' | 'pending_principal';
-
-    if (role === 'hod') {
-      newStatus = 'pending_hod';
-      timestampFieldToClear = 'hod_approval_at';
-      nextStatus = 'pending_dean';
-    } else if (role === 'dean') {
-      newStatus = 'pending_dean';
-      timestampFieldToClear = 'dean_approval_at';
-      nextStatus = 'pending_principal';
-    } else if (role === 'principal') {
-      // If principal revokes, the event goes back to pending dean
-      newStatus = 'pending_dean';
-      timestampFieldToClear = 'principal_approval_at';
-      nextStatus = 'approved'; // This is the final status, but we don't use it here.
-    } else {
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Determine the status to revert to.
-    // HOD revocation sends it back to pending HOD (for re-review).
-    // Dean revocation sends it back to pending Dean (for re-review).
-    // Principal revocation sends it back to pending Dean (for re-review).
-    
+    // Determine the status to revert to and the remarks
     let statusToRevertTo: 'pending_hod' | 'pending_dean' | 'pending_principal';
     let remarks = `Approval revoked by ${role.toUpperCase()}. Status reverted to `;
 
@@ -62,9 +36,9 @@ const RevokeApprovalDialog = ({ event, isOpen, onClose, onRevokeSuccess, role }:
     } else if (role === 'dean') {
         statusToRevertTo = 'pending_dean';
         remarks += 'Pending Dean.';
-    To
     } else { // principal
-        statusToRevertTo = 'pending_dean'; // Principal revocation sends it back to Dean
+        // Principal revocation sends it back to Dean for re-review
+        statusToRevertTo = 'pending_dean'; 
         remarks += 'Pending Dean.';
     }
 
@@ -103,6 +77,7 @@ const RevokeApprovalDialog = ({ event, isOpen, onClose, onRevokeSuccess, role }:
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
+  // Revocation is allowed only BEFORE the event date starts.
   const canRevoke = eventDate > today;
 
   return (
