@@ -399,17 +399,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   };
 
   const renderDepartmentClubField = () => {
-    if (isReadOnly) {
-      // Check if event exists before accessing its properties
-      if (!event) return null; 
-      return (
-        <FormItem>
-          <FormLabel>Organizing Department/Club</FormLabel>
-          <Input value={event.department_club || 'N/A'} disabled />
-        </FormItem>
-      );
-    }
-
     if (!isCoordinator) {
       return (
         <Alert variant="destructive">
@@ -435,7 +424,24 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         </Alert>
       );
     }
+    
+    // If read-only (view mode) or only one option is available, use a disabled Input (textbox)
+    if (isReadOnly || options.length === 1) {
+      const displayValue = isReadOnly ? event?.department_club : options[0]?.value;
+      return (
+        <FormItem>
+          <FormLabel>Organizing Department/Club</FormLabel>
+          <Input value={displayValue || 'N/A'} disabled />
+          {/* Hidden field to ensure form submission includes the value if it's implicitly set */}
+          {!isReadOnly && options.length === 1 && (
+            <input type="hidden" {...form.register('department_club')} value={displayValue} />
+          )}
+          <FormMessage />
+        </FormItem>
+      );
+    }
 
+    // If multiple options are available and not read-only, use RadioGroup for selection
     return (
       <FormField
         control={form.control}
@@ -448,7 +454,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 onValueChange={field.onChange}
                 value={field.value}
                 className={cn("flex flex-col space-y-2", options.length > 1 && "sm:flex-row sm:space-x-4 sm:space-y-0")}
-                disabled={isReadOnly || options.length === 1}
+                disabled={isReadOnly}
               >
                 {options.map(option => (
                   <FormItem key={option.value} className="flex items-center space-x-3 space-y-0">
