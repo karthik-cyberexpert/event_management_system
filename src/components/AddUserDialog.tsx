@@ -34,7 +34,6 @@ const formSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
   department: z.string().optional(),
   club: z.string().optional(),
@@ -75,7 +74,6 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       first_name: '',
       last_name: '',
       email: '',
-      password: '',
       department: '',
       club: '',
       professional_society: '',
@@ -115,14 +113,14 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
 
       const result = data.results[0];
       if (result.success) {
-        toast.success(`User ${result.email} created successfully.`);
+        toast.success(`Invitation sent to ${result.email}.`);
         onSuccess();
         onClose();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      toast.error(`Failed to create user: ${error.message}`);
+      toast.error(`Failed to invite user: ${error.message}`);
     }
   };
 
@@ -143,8 +141,8 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>Create a new user account and assign their role.</DialogDescription>
+          <DialogTitle>Invite New User</DialogTitle>
+          <DialogDescription>An invitation will be sent to the user's email to set their password.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -153,7 +151,6 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
               <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
             {showDepartmentField && (
@@ -169,7 +166,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Creating...' : 'Create User'}
+                {form.formState.isSubmitting ? 'Sending...' : 'Send Invitation'}
               </Button>
             </DialogFooter>
           </form>

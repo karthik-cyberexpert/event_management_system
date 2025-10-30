@@ -25,11 +25,11 @@ serve(async (req) => {
     const results = [];
 
     for (const userData of users) {
-      const { email, password, first_name, last_name, role, department, club, professional_society } = userData;
+      const { email, first_name, last_name, role, department, club, professional_society } = userData;
 
       // --- Validation ---
-      if (!email || !password || !first_name || !last_name || !role) {
-        results.push({ email: email || 'N/A', success: false, error: 'Missing required fields (email, password, first_name, last_name, role).' });
+      if (!email || !first_name || !last_name || !role) {
+        results.push({ email: email || 'N/A', success: false, error: 'Missing required fields (email, first_name, last_name, role).' });
         continue;
       }
 
@@ -38,7 +38,6 @@ serve(async (req) => {
         continue;
       }
       
-      // Coordinator specific validation: Must have either department, club, or society assigned
       if (role === 'coordinator' && !department && !club && !professional_society) {
         results.push({ email, success: false, error: 'Coordinator must be assigned to a Department, Club, or Professional Society.' });
         continue;
@@ -49,19 +48,19 @@ serve(async (req) => {
       const profileClub = (role === 'coordinator') ? (club || null) : null;
       const profileSociety = (role === 'coordinator') ? (professional_society || null) : null;
 
-      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+      const { error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          first_name,
-          last_name,
-          role,
-          department: profileDepartment,
-          club: profileClub,
-          professional_society: profileSociety,
-        },
-      });
+        {
+          data: {
+            first_name,
+            last_name,
+            role,
+            department: profileDepartment,
+            club: profileClub,
+            professional_society: profileSociety,
+          },
+        }
+      );
 
       if (authError) {
         results.push({ email, success: false, error: authError.message });

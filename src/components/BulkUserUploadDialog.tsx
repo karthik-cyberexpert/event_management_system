@@ -51,7 +51,6 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         first_name: 'John',
         last_name: 'Doe',
         email: 'john.doe@example.com',
-        password: 'strongpassword123',
         role: 'coordinator', // Must be one of: admin, coordinator, hod, dean, principal
         department: 'Computer Science (B.E)', // Required for coordinator and hod roles
         club: 'Coding Club', // Optional, for coordinator role
@@ -86,14 +85,8 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
           throw new Error('The uploaded file is empty.');
         }
 
-        // Ensure password is a string, as XLSX can interpret numeric passwords as numbers.
-        const processedJson = json.map(user => ({
-          ...user,
-          password: user.password ? String(user.password) : '',
-        }));
-
         const { data: responseData, error } = await supabase.functions.invoke('admin-create-users', {
-          body: processedJson,
+          body: json,
         });
 
         if (error) throw error;
@@ -103,12 +96,12 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         const successCount = results.length - failedResults.length;
 
         if (successCount > 0) {
-          toast.success(`${successCount} user(s) created successfully.`);
+          toast.success(`${successCount} user invitation(s) sent successfully.`);
         }
 
         if (failedResults.length > 0) {
           setUploadErrors(failedResults);
-          toast.error(`${failedResults.length} user(s) failed to create. See details below.`);
+          toast.error(`${failedResults.length} user invitation(s) failed to send. See details below.`);
         } else {
           onSuccess();
           onClose();
@@ -137,7 +130,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         <DialogHeader>
           <DialogTitle>Bulk User Upload</DialogTitle>
           <DialogDescription>
-            Upload an XLSX file to create multiple users. Coordinators can be assigned to a department, club, or professional society.
+            Upload an XLSX file to invite multiple users. An email will be sent to each user to set up their account.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
@@ -178,7 +171,7 @@ const BulkUserUploadDialog = ({ isOpen, onClose, onSuccess }: BulkUserUploadDial
         <DialogFooter>
           <Button variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button onClick={handleUpload} disabled={isUploading || files.length === 0}>
-            {isUploading ? 'Uploading...' : 'Upload & Create Users'}
+            {isUploading ? 'Uploading...' : 'Upload & Send Invitations'}
           </Button>
         </DialogFooter>
       </DialogContent>
