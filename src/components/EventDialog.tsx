@@ -42,7 +42,7 @@ import { format } from 'date-fns';
 
 const EVENT_CATEGORIES = [
   'curricular', 'tlp', 'extended curricular activity', 'R & D', 'consultancy', 
-  'alumini', 'industry linkage', 'iic', 'sports', 'culturals', 'extension activity', 'others'
+  'alumini', 'industry linkage', 'IIC', 'sports', 'culturals', 'extension activity', 'others'
 ];
 
 const TARGET_AUDIENCES = [
@@ -57,7 +57,25 @@ const PROMOTION_STRATEGIES = [
   'posters', 'social media', 'email', 'others'
 ];
 
-const SDG_GOALS = Array.from({ length: 17 }, (_, i) => `SDG ${i + 1}`);
+const SDG_GOALS = [
+  'No Poverty',
+  'Zero Hunger',
+  'Good Health and Well-being',
+  'Quality Education',
+  'Gender Equality',
+  'Clean Water and Sanitation',
+  'Affordable and Clean Energy',
+  'Decent Work and Economic Growth',
+  'Industry, Innovation and Infrastructure',
+  'Reduced Inequalities',
+  'Sustainable Cities and Communities',
+  'Responsible Consumption and Production',
+  'Climate Action',
+  'Life Below Water',
+  'Life on Land',
+  'Peace, Justice and Strong Institutions',
+  'Partnerships for the Goals',
+];
 
 // --- Zod Schema ---
 
@@ -426,7 +444,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
               <div className="space-y-4 md:col-span-2">
                 <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
-                <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
               </div>
 
               <div className="space-y-4 md:col-span-2">
