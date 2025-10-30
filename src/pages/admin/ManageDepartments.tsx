@@ -165,11 +165,11 @@ const ManageDepartments = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="w-full justify-start">
-                          {department.coordinators.length} {department.coordinators.length === 1 ? 'Coordinator' : 'Coordinators'}
+                          {department.coordinators?.length || 0} { (department.coordinators?.length || 0) === 1 ? 'Coordinator' : 'Coordinators'}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
-                        {department.coordinators.length > 0 ? (
+                        {(department.coordinators?.length || 0) > 0 ? (
                           department.coordinators.map(c => (
                             <DropdownMenuItem key={c.id}>
                               {c.first_name} {c.last_name}
