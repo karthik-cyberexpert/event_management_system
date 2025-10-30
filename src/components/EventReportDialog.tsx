@@ -23,18 +23,25 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
-const ReportRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
-    <div className="font-semibold text-sm text-gray-600">{label}</div>
-    <div className="col-span-2 text-sm text-gray-800">{children || 'N/A'}</div>
-  </div>
-);
+const ReportRow = ({ label, children }: { label: string; children: React.ReactNode }) => {
+  // Check if children is null, undefined, or an empty string (after trimming if it's a string)
+  const displayValue = (typeof children === 'string' && children.trim() === '') || children === null || children === undefined
+    ? 'N/A'
+    : children;
+
+  return (
+    <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
+      <div className="font-semibold text-sm text-gray-600">{label}</div>
+      <div className="col-span-2 text-sm text-gray-800">{displayValue}</div>
+    </div>
+  );
+};
 
 const EventReportContent = ({ data }: { data: ReportData }) => {
   if (!data) return null;
 
   const formatArray = (arr: string[] | null | undefined) => {
-    if (!arr || arr.length === 0) return 'N/A';
+    if (!arr || arr.length === 0) return ''; // Return empty string so ReportRow can handle 'N/A'
     return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
   };
 
@@ -74,7 +81,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
                 <li key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</li>
               ))}
             </ul>
-          ) : 'N/A'}
+          ) : ''}
         </ReportRow>
         <ReportRow label="Speakers/Resource Persons">
           {(data.speakers || []).length > 0 ? (
@@ -83,7 +90,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
                 <li key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</li>
               ))}
             </ul>
-          ) : 'N/A'}
+          ) : ''}
         </ReportRow>
         <ReportRow label="Budget Estimate">₹{data.budget_estimate?.toFixed(2) || '0.00'}</ReportRow>
         <ReportRow label="Funding Source">{data.budget_estimate > 0 ? formatArray(data.funding_source) : 'N/A (No budget)'}</ReportRow>
