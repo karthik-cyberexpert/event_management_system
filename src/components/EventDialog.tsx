@@ -398,6 +398,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
   const renderDepartmentClubField = () => {
     if (isReadOnly) {
+      // Check if event exists before accessing its properties
+      if (!event) return null; 
       return (
         <FormItem>
           <FormLabel>Department/Club</FormLabel>
