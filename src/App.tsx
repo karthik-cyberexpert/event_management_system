@@ -17,7 +17,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
 import EventsOverview from "./pages/EventsOverview";
-// MyApprovals is no longer imported or used
+import MyApprovals from "./pages/MyApprovals";
 
 const queryClient = new QueryClient();
 
@@ -45,11 +45,12 @@ const AppRoutes = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                {/* Approved Events page is kept for Coordinator role, but Approvers will use EventsOverview */}
-                <Route path="/approved-events" element={<ApprovedEvents />} /> 
+                <Route path="/approved-events" element={<ApprovedEvents />} />
                 <Route path="/events-overview" element={<EventsOverview />} />
                 
-                {/* Removed MyApprovals route */}
+                {(profile?.role === 'hod' || profile?.role === 'dean' || profile?.role === 'principal') && (
+                  <Route path="/my-approvals" element={<MyApprovals />} />
+                )}
 
                 {profile?.role === 'admin' && (
                   <>
