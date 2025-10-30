@@ -45,11 +45,12 @@ const EventCancelDialog = ({ event, isOpen, onClose, onCancelSuccess }: EventCan
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     
+    // Use 'cancelled' status and store the reason in remarks
     const { error } = await supabase
       .from('events')
       .update({ 
-        status: 'rejected', // Using 'rejected' for coordinator cancellation
-        remarks: `CANCELED BY COORDINATOR: ${values.cancellation_reason}`,
+        status: 'cancelled', 
+        remarks: `CANCELLATION REASON: ${values.cancellation_reason}`,
       })
       .eq('id', event.id);
 

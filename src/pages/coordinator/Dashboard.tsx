@@ -33,6 +33,7 @@ const statusColors = {
   pending_principal: 'bg-primary/80',
   approved: 'bg-green-500',
   rejected: 'bg-destructive',
+  cancelled: 'bg-gray-500', // New color for cancelled
 };
 
 const CoordinatorDashboard = () => {
@@ -139,6 +140,11 @@ const CoordinatorDashboard = () => {
     handleCancelDialogClose();
   };
 
+  const isCancellable = (status: string) => {
+    // Allow cancellation if not already rejected or cancelled
+    return status !== 'rejected' && status !== 'cancelled';
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -237,7 +243,7 @@ const CoordinatorDashboard = () => {
                                 <Download className="mr-2 h-4 w-4" /> Download Report
                               </DropdownMenuItem>
                             )}
-                            {event.status !== 'rejected' && (
+                            {isCancellable(event.status) && (
                               <DropdownMenuItem 
                                 onClick={() => handleCancel(event)}
                                 className="text-red-600 focus:text-red-600"
