@@ -23,29 +23,39 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
-// Rebuilt ReportRow to handle different data types internally for robustness
+// Completely rebuilt ReportRow for robust data handling
 const ReportRow = ({ label, value }: { label: string; value: any }) => {
-  let displayValue: React.ReactNode = 'N/A';
-
-  if (value) {
-    if (Array.isArray(value) && value.length > 0) {
-      displayValue = value.map(item => String(item).charAt(0).toUpperCase() + String(item).slice(1).replace(/_/g, ' ')).join(', ');
-    } else if (typeof value === 'string' && value.trim() !== '') {
-      displayValue = value;
-    } else if (typeof value === 'number') {
-      displayValue = value.toString();
-    } else if (value instanceof Date) {
-      displayValue = format(value, 'PPP p');
-    } else if (typeof value === 'object' && !Array.isArray(value)) {
-        // This will handle the ReactNode for lists
-        displayValue = value;
+  const processValue = (val: any): React.ReactNode => {
+    // Explicitly check for null or undefined first
+    if (val === null || val === undefined) {
+      return 'N/A';
     }
-  }
+
+    // Handle arrays
+    if (Array.isArray(val)) {
+      return val.length > 0
+        ? val.map(item => String(item).charAt(0).toUpperCase() + String(item).slice(1).replace(/_/g, ' ')).join(', ')
+        : 'N/A';
+    }
+
+    // Handle strings (including empty or whitespace-only)
+    if (typeof val === 'string') {
+      return val.trim() === '' ? 'N/A' : val;
+    }
+    
+    // Handle React nodes (for custom lists)
+    if (typeof val === 'object' && val !== null) {
+      return val;
+    }
+
+    // Handle numbers and other primitives
+    return String(val);
+  };
 
   return (
     <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
       <div className="font-semibold text-sm text-gray-600">{label}</div>
-      <div className="col-span-2 text-sm text-gray-800">{displayValue}</div>
+      <div className="col-span-2 text-sm text-gray-800">{processValue(value)}</div>
     </div>
   );
 };
@@ -85,7 +95,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
                 <li key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</li>
               ))}
             </ul>
-          ) : 'N/A'
+          ) : null // Let ReportRow handle the 'N/A'
         } />
         <ReportRow label="Speakers/Resource Persons" value={
           (data.speakers || []).length > 0 ? (
@@ -94,7 +104,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
                 <li key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</li>
               ))}
             </ul>
-          ) : 'N/A'
+          ) : null // Let ReportRow handle the 'N/A'
         } />
         <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
         <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
@@ -117,7 +127,6 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     if (!event || event.status !== 'approved') return;
     setLoading(true);
     try {
-      // Using a fully explicit query to ensure all columns are fetched
       const { data, error } = await supabase
         .from('events')
         .select(`
