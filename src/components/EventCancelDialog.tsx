@@ -45,25 +45,25 @@ const EventCancelDialog = ({ event, isOpen, onClose, onCancelSuccess }: EventCan
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     
-    // Use 'cancelled' status and store the reason in remarks
-    const { error, count } = await supabase
-      .from('events')
-      .update({ 
-        status: 'cancelled', 
-        remarks: `CANCELLATION REASON: ${values.cancellation_reason}`,
-      }, { count: 'exact' }) // Request exact count of affected rows
-      .eq('id', event.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('coordinator-cancel-event', {
+        body: {
+          event_id: event.id,
+          cancellation_reason: values.cancellation_reason,
+        },
+      });
 
-    if (error) {
-      toast.error(`Failed to cancel event: ${error.message}`);
-    } else if (count === 0) {
-      // This should ideally not happen with the new RLS policy, but serves as a robust check.
-      toast.error('Cancellation failed: The event could not be updated. Check permissions or if the event is already rejected/cancelled.');
-    } else {
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
       toast.success(`Event "${event.title}" has been successfully canceled.`);
       onCancelSuccess();
+    } catch (error: any) {
+      // Display the specific error message returned by the Edge Function
+      toast.error(`Cancellation failed: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
