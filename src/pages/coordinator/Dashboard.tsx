@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle } from 'lucide-react';
+import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle, Download } from 'lucide-react';
 import EventDialog from '@/components/EventDialog';
 import EventCancelDialog from '@/components/EventCancelDialog';
+import EventReportDialog from '@/components/EventReportDialog';
 import {
   Table,
   TableBody,
@@ -41,6 +42,7 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); // New state
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
 
@@ -96,6 +98,11 @@ const CoordinatorDashboard = () => {
     setSelectedEvent(event);
     setIsCancelDialogOpen(true);
   };
+  
+  const handleReport = (event: any) => {
+    setSelectedEvent(event);
+    setIsReportDialogOpen(true);
+  };
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
@@ -104,6 +111,11 @@ const CoordinatorDashboard = () => {
 
   const handleCancelDialogClose = () => {
     setIsCancelDialogOpen(false);
+    setSelectedEvent(null);
+  };
+  
+  const handleReportDialogClose = () => {
+    setIsReportDialogOpen(false);
     setSelectedEvent(null);
   };
 
@@ -135,12 +147,19 @@ const CoordinatorDashboard = () => {
       />
       
       {selectedEvent && (
-        <EventCancelDialog
-          isOpen={isCancelDialogOpen}
-          onClose={handleCancelDialogClose}
-          onCancelSuccess={handleCancelSuccess}
-          event={selectedEvent}
-        />
+        <>
+          <EventCancelDialog
+            isOpen={isCancelDialogOpen}
+            onClose={handleCancelDialogClose}
+            onCancelSuccess={handleCancelSuccess}
+            event={selectedEvent}
+          />
+          <EventReportDialog
+            isOpen={isReportDialogOpen}
+            onClose={handleReportDialogClose}
+            event={selectedEvent}
+          />
+        </>
       )}
 
       <Tabs defaultValue="my-events">
@@ -201,6 +220,11 @@ const CoordinatorDashboard = () => {
                             {event.status === 'returned_to_coordinator' && (
                               <DropdownMenuItem onClick={() => handleEdit(event)}>
                                 Edit
+                              </DropdownMenuItem>
+                            )}
+                            {event.status === 'approved' && (
+                              <DropdownMenuItem onClick={() => handleReport(event)}>
+                                <Download className="mr-2 h-4 w-4" /> Download Report
                               </DropdownMenuItem>
                             )}
                             {event.status !== 'rejected' && (
