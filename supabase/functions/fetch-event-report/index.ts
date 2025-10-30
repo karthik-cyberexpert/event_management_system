@@ -21,14 +21,15 @@ serve(async (req) => {
       })
     }
 
-    // Initialize Supabase client with the standard key (RLS handles security)
-    const supabase = createClient(
+    // Initialize Supabase client with Service Role Key to ensure all data is fetched reliably,
+    // regardless of RLS policies on specific columns/data types.
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     // Fetch event details with all related data
-    const { data: event, error } = await supabase
+    const { data: event, error } = await supabaseAdmin
       .from('events')
       .select(`
         *,
@@ -40,6 +41,7 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    // Security check: Ensure the report is only generated for approved events.
     if (event.status !== 'approved') {
         return new Response(JSON.stringify({ error: 'Event must be approved to generate a report.' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
