@@ -75,20 +75,12 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
     setIsSubmitting(true);
     
-    const updatePayload: { status: string, remarks: string | null, [key: string]: any } = {
-      status: action.status,
-      remarks: remarks || null,
-    };
-
-    // Set approval timestamp if approving
-    if (actionType === 'approve' && action.timestampField) {
-      updatePayload[action.timestampField] = new Date().toISOString();
-    }
-
-    const { error } = await supabase
-      .from('events')
-      .update(updatePayload)
-      .eq('id', event.id);
+    const { error } = await supabase.rpc('update_event_status', {
+      p_event_id: event.id,
+      p_new_status: action.status,
+      p_new_remarks: remarks || null,
+      p_approval_timestamp_field: action.timestampField || null,
+    });
 
     if (error) {
       toast.error(`Failed to update event: ${error.message}`);
