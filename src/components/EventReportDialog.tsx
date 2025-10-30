@@ -37,7 +37,7 @@ const ReportRow = ({ label, value }: { label: string; value: any }) => {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
+    <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0">
       <div className="font-semibold text-sm text-gray-600">{label}</div>
       <div className="col-span-2 text-sm text-gray-800">{processValue(value)}</div>
     </div>
@@ -53,28 +53,28 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
   };
 
   return (
-    <div className="p-6 bg-white text-black">
+    <div className="p-4 bg-white text-black">
       {/* College Header */}
-      <div className="text-center mb-4">
-        <h1 className="text-xl font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
-        <p className="text-md text-gray-600">(An Autonomous Institution)</p>
-        <p className="text-md text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
-        <h2 className="text-lg font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
+      <div className="text-center mb-2">
+        <h1 className="text-lg font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
+        <p className="text-sm text-gray-600">(An Autonomous Institution)</p>
+        <p className="text-sm text-gray-600">Dr. M. G. R. Nagar, Hosur</p>
+        <h2 className="text-base font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
       </div>
       
       {/* Form Title */}
-      <h3 className="text-center text-lg font-bold underline mb-6">Event Registration and Approval Form</h3>
+      <h3 className="text-center text-base font-bold underline mb-4">Event Registration and Approval Form</h3>
 
       {/* Bordered Content */}
       <div className="border border-gray-400">
         {/* Table Headers */}
-        <div className="grid grid-cols-3 gap-4 p-3 bg-gray-100 border-b border-gray-400 font-bold text-sm">
+        <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
           <div className="col-span-1">Section</div>
           <div className="col-span-2">Details</div>
         </div>
 
         {/* Table Body */}
-        <div className="p-3">
+        <div className="p-2">
           <ReportRow label="Event Title" value={data.title} />
           <ReportRow label="Department/Club" value={data.department_club} />
           <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
