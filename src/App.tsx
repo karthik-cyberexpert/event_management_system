@@ -18,6 +18,7 @@ import ManageDepartments from "./pages/admin/ManageDepartments";
 import ManageClubs from "./pages/admin/ManageClubs";
 import EventsOverview from "./pages/EventsOverview";
 import StyledDashboard from "./pages/StyledDashboard";
+import MyApprovals from "./pages/MyApprovals";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,10 @@ const AppRoutes = () => {
                 <Route path="/events-overview" element={<EventsOverview />} />
                 <Route path="/styled-dashboard" element={<StyledDashboard />} />
                 
+                {(profile?.role === 'hod' || profile?.role === 'dean' || profile?.role === 'principal') && (
+                  <Route path="/my-approvals" element={<MyApprovals />} />
+                )}
+
                 {profile?.role === 'admin' && (
                   <>
                     <Route path="/venues" element={<ManageVenues />} />

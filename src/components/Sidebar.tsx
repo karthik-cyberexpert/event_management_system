@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Building, Users, ShieldCheck, CalendarCheck, ClipboardList, ListChecks, Palette } from 'lucide-react';
+import { Home, Building, Users, ShieldCheck, CalendarCheck, ClipboardList, ListChecks, Palette, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SidebarProps = {
@@ -9,6 +9,8 @@ type SidebarProps = {
 const baseLinks = [
   { to: '/approved-events', label: 'Approved Events', icon: CalendarCheck },
 ];
+
+const myApprovalsLink = { to: '/my-approvals', label: 'My Approvals', icon: CheckSquare };
 
 const navLinks = {
   admin: [
@@ -26,16 +28,19 @@ const navLinks = {
   ],
   hod: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    myApprovalsLink,
     { to: '/events-overview', label: 'Events Overview', icon: ListChecks },
     ...baseLinks,
   ],
   dean: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    myApprovalsLink,
     { to: '/events-overview', label: 'Events Overview', icon: ListChecks },
     ...baseLinks,
   ],
   principal: [
     { to: '/', label: 'Pending Events', icon: ShieldCheck },
+    myApprovalsLink,
     { to: '/events-overview', label: 'Events Overview', icon: ListChecks },
     ...baseLinks,
   ],
