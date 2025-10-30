@@ -64,10 +64,10 @@ const Login = () => {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-md">
+    <div className="flex justify-center items-center min-h-screen bg-muted">
+      <Card className="w-full max-w-md border-border shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Event Platform Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Event Platform Login</CardTitle>
           <CardDescription>Enter your credentials to sign in</CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,11 +99,11 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
               <div className="mt-4 text-center text-sm">
-                <Link to="/forgot-password" className="underline">
+                <Link to="/forgot-password" className="text-primary hover:underline">
                   Forgot your password?
                 </Link>
               </div>

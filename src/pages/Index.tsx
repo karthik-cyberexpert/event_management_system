@@ -4,6 +4,7 @@ import HodDashboard from "./hod/Dashboard";
 import DeanDashboard from "./dean/Dashboard";
 import PrincipalDashboard from "./principal/Dashboard";
 import AdminDashboard from "./admin/Dashboard";
+import StyledDashboard from "./StyledDashboard";
 
 const Index = () => {
   const { profile } = useAuth();
@@ -22,14 +23,9 @@ const Index = () => {
     case 'principal':
       return <PrincipalDashboard />;
     case 'admin':
-      return <AdminDashboard />;
+      return <StyledDashboard />;
     default:
-      return (
-        <div className="p-8">
-          <h1 className="text-2xl font-bold">Welcome, {profile.first_name}</h1>
-          <p>Your role ({profile.role}) dashboard is not yet available.</p>
-        </div>
-      );
+      return <StyledDashboard />;
   }
 };
 

@@ -22,25 +22,25 @@ const Layout = ({ children }: { children: ReactNode }) => {
   if (!profile) {
     return (
       <div className="flex min-h-screen">
-        <aside className="w-64 bg-gray-800 p-4">
+        <aside className="w-64 bg-sidebar p-4">
            <div className="p-2 mb-4">
-             <Skeleton className="h-8 w-2/5 bg-gray-700" />
+             <Skeleton className="h-8 w-2/5 bg-sidebar-accent" />
            </div>
            <div className="space-y-2">
-             <Skeleton className="h-9 w-full bg-gray-700" />
-             <Skeleton className="h-9 w-full bg-gray-700" />
-             <Skeleton className="h-9 w-full bg-gray-700" />
+             <Skeleton className="h-9 w-full bg-sidebar-accent" />
+             <Skeleton className="h-9 w-full bg-sidebar-accent" />
+             <Skeleton className="h-9 w-full bg-sidebar-accent" />
            </div>
         </aside>
         <div className="flex-1 flex flex-col">
-          <header className="flex justify-between items-center p-4 border-b bg-white">
+          <header className="flex justify-between items-center p-4 border-b bg-background">
             <Skeleton className="h-7 w-48" />
             <div className="flex items-center gap-4">
               <Skeleton className="h-6 w-40" />
               <Skeleton className="h-10 w-24" />
             </div>
           </header>
-          <main className="flex-1 p-6 bg-gray-50">
+          <main className="flex-1 p-6 bg-muted">
             <div className="space-y-4">
                 <Skeleton className="h-8 w-1/4" />
                 <Skeleton className="h-96 w-full" />
@@ -55,7 +55,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
     <div className="flex min-h-screen">
       <Sidebar role={profile.role} />
       <div className="flex-1 flex flex-col">
-        <header className="flex justify-between items-center p-4 border-b bg-white">
+        <header className="flex justify-between items-center p-4 border-b bg-background">
           <h1 className="text-xl font-semibold">Event Management System</h1>
           <div className="flex items-center gap-4">
             <NotificationBell />
@@ -79,7 +79,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 p-6 bg-gray-50">{children}</main>
+        <main className="flex-1 p-6 bg-muted">{children}</main>
       </div>
     </div>
   );

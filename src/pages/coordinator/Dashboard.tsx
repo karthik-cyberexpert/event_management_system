@@ -25,13 +25,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCalendar from '@/components/EventCalendar';
 
 const statusColors = {
-  pending_hod: 'bg-yellow-500',
-  returned_to_coordinator: 'bg-orange-500',
-  pending_dean: 'bg-yellow-600',
-  returned_to_hod: 'bg-orange-600',
-  pending_principal: 'bg-yellow-700',
+  pending_hod: 'bg-primary',
+  returned_to_coordinator: 'bg-secondary',
+  pending_dean: 'bg-accent',
+  returned_to_hod: 'bg-muted',
+  pending_principal: 'bg-primary/80',
   approved: 'bg-green-500',
-  rejected: 'bg-red-500',
+  rejected: 'bg-destructive',
 };
 
 const CoordinatorDashboard = () => {
@@ -120,8 +120,8 @@ const CoordinatorDashboard = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold">Coordinator Dashboard</h2>
-        <Button onClick={handleCreate}>
+        <h2 className="text-3xl font-bold text-primary">Coordinator Dashboard</h2>
+        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90">
           <PlusCircle className="mr-2 h-4 w-4" /> Create Event
         </Button>
       </div>
@@ -144,26 +144,26 @@ const CoordinatorDashboard = () => {
       )}
 
       <Tabs defaultValue="my-events">
-        <TabsList className="mb-4">
-          <TabsTrigger value="my-events">
+        <TabsList className="mb-4 bg-muted p-1 rounded-lg">
+          <TabsTrigger value="my-events" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <List className="w-4 h-4 mr-2" />
             My Events
           </TabsTrigger>
-          <TabsTrigger value="calendar">
+          <TabsTrigger value="calendar" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Calendar className="w-4 h-4 mr-2" />
             Approved Events Calendar
           </TabsTrigger>
         </TabsList>
         <TabsContent value="my-events">
-          <div className="bg-white rounded-lg shadow">
+          <div className="bg-card rounded-lg shadow border border-border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Venue</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-muted hover:bg-muted">
+                  <TableHead className="text-foreground font-semibold">Title</TableHead>
+                  <TableHead className="text-foreground font-semibold">Venue</TableHead>
+                  <TableHead className="text-foreground font-semibold">Date</TableHead>
+                  <TableHead className="text-foreground font-semibold">Status</TableHead>
+                  <TableHead className="text-foreground font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -182,7 +182,7 @@ const CoordinatorDashboard = () => {
                       <TableCell>{event.venues?.name || 'N/A'}</TableCell>
                       <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                       <TableCell>
-                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white`}>
+                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-primary-foreground`}>
                           {event.status.replace(/_/g, ' ').toUpperCase()}
                         </Badge>
                       </TableCell>

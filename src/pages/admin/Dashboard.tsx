@@ -1,8 +1,8 @@
 import { Navigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-  // Redirect Admin to the comprehensive events overview page
-  return <Navigate to="/events-overview" replace />;
+  // Redirect Admin to the new styled dashboard
+  return <Navigate to="/styled-dashboard" replace />;
 };
 
 export default AdminDashboard;
