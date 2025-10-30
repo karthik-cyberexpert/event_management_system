@@ -12,8 +12,6 @@ import {
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
-import { Badge } from './ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -25,6 +23,13 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
+const ReportRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 last:border-b-0">
+    <div className="font-semibold text-sm text-gray-600">{label}</div>
+    <div className="col-span-2 text-sm text-gray-800">{children || 'N/A'}</div>
+  </div>
+);
+
 const EventReportContent = ({ data }: { data: ReportData }) => {
   if (!data) return null;
 
@@ -33,90 +38,57 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
     return arr.map(item => item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')).join(', ');
   };
 
-  const renderCoordinators = () => {
-    const names = data.coordinator_name || [];
-    const contacts = data.coordinator_contact || [];
-    if (names.length === 0) return <span>N/A</span>;
-    return (
-      <ul className="list-disc list-inside space-y-1">
-        {names.map((name: string, index: number) => (
-          <li key={index}>{name} ({contacts[index] || 'No contact'})</li>
-        ))}
-      </ul>
-    );
+  const formatApproval = (timestamp: string | null) => {
+    if (!timestamp) return 'Pending';
+    return `Approved on ${format(new Date(timestamp), 'PPP p')}`;
   };
-
-  const renderSpeakers = () => {
-    const names = data.speakers || [];
-    const details = data.speaker_details || [];
-    if (names.length === 0) return <span>N/A</span>;
-    return (
-      <ul className="list-disc list-inside space-y-1">
-        {names.map((name: string, index: number) => (
-          <li key={index}><strong>{name}</strong>: {details[index] || 'No details provided'}</li>
-        ))}
-      </ul>
-    );
-  };
-
-  const ApprovalStatus = ({ role, timestamp }: { role: string, timestamp: string | null }) => (
-    <div className="flex justify-between items-center border-b py-2">
-      <span className="font-medium">{role} Approval:</span>
-      {timestamp ? (
-        <Badge className="bg-green-500 text-white">Approved on {format(new Date(timestamp), 'PPP p')}</Badge>
-      ) : (
-        <Badge variant="destructive">Not Approved</Badge>
-      )}
-    </div>
-  );
 
   return (
-    <div className="p-6 space-y-6 print:p-0 print:text-black">
-      <header className="text-center border-b pb-4 mb-4 print:border-b-2">
-        <h1 className="text-2xl font-bold text-primary print:text-3xl">{data.title}</h1>
-        <p className="text-lg text-muted-foreground">Event Approval Report</p>
+    <div className="p-6 bg-white text-black">
+      <header className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">{data.title}</h1>
+        <p className="text-lg text-gray-500 mt-1">Event Approval Report</p>
       </header>
-      <Card className="print:border-none print:shadow-none">
-        <CardHeader><CardTitle className="text-xl">Basic Information</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div><strong>Department/Club:</strong> {data.department_club || 'N/A'}</div>
-          <div><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{data.mode_of_event || 'N/A'}</Badge></div>
-          <div><strong>Date:</strong> {format(new Date(data.event_date), 'PPP')}</div>
-          <div><strong>Time:</strong> {data.start_time} - {data.end_time}</div>
-          <div><strong>Venue:</strong> {data.venues?.name || 'N/A'} ({data.venues?.location || 'N/A'})</div>
-          <div><strong>Expected Participants:</strong> {data.expected_audience || 'N/A'}</div>
-          <div className="md:col-span-2"><strong>Description:</strong> {data.description || 'N/A'}</div>
-        </CardContent>
-      </Card>
-      <Card className="print:border-none print:shadow-none">
-        <CardHeader><CardTitle className="text-xl">Coordination & Speakers</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div><strong>Coordinators:</strong>{renderCoordinators()}</div>
-          <div><strong>Speakers/Resource Persons:</strong>{renderSpeakers()}</div>
-        </CardContent>
-      </Card>
-      <Card className="print:border-none print:shadow-none">
-        <CardHeader><CardTitle className="text-xl">Event Details & Logistics</CardTitle></CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div><strong>Objective:</strong> {data.objective || 'N/A'}</div>
-          <div><strong>Proposed Outcomes:</strong> {data.proposed_outcomes || 'N/A'}</div>
-          <div><strong>Category:</strong> {formatArray(data.category)}</div>
-          <div><strong>Target Audience:</strong> {formatArray(data.target_audience)}</div>
-          <div><strong>SDG Alignment:</strong> {formatArray(data.sdg_alignment)}</div>
-          <div><strong>Budget Estimate:</strong> ₹{data.budget_estimate?.toFixed(2) || '0.00'}</div>
-          <div><strong>Funding Source:</strong> {data.budget_estimate > 0 ? formatArray(data.funding_source) : 'N/A (No budget)'}</div>
-          <div><strong>Promotion Strategy:</strong> {formatArray(data.promotion_strategy)}</div>
-        </CardContent>
-      </Card>
-      <Card className="print:border-none print:shadow-none">
-        <CardHeader><CardTitle className="text-xl">Official Approvals</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <ApprovalStatus role="HOD" timestamp={data.hod_approval_at} />
-          <ApprovalStatus role="Dean" timestamp={data.dean_approval_at} />
-          <ApprovalStatus role="Principal" timestamp={data.principal_approval_at} />
-          <div className="pt-2"><strong>Final Remarks:</strong> {data.remarks || 'N/A'}</div>
-        </CardContent>
-      </Card>
+
+      <div className="space-y-1">
+        <ReportRow label="Department/Club">{data.department_club}</ReportRow>
+        <ReportRow label="Mode of Event"><span className="capitalize">{data.mode_of_event}</span></ReportRow>
+        <ReportRow label="Date">{format(new Date(data.event_date), 'PPP')}</ReportRow>
+        <ReportRow label="Time">{data.start_time} - {data.end_time}</ReportRow>
+        <ReportRow label="Venue">{data.venues?.name} ({data.venues?.location || 'N/A'})</ReportRow>
+        <ReportRow label="Expected Participants">{data.expected_audience}</ReportRow>
+        <ReportRow label="Description">{data.description}</ReportRow>
+        <ReportRow label="Objective">{data.objective}</ReportRow>
+        <ReportRow label="Proposed Outcomes">{data.proposed_outcomes}</ReportRow>
+        <ReportRow label="Category">{formatArray(data.category)}</ReportRow>
+        <ReportRow label="Target Audience">{formatArray(data.target_audience)}</ReportRow>
+        <ReportRow label="SDG Alignment">{formatArray(data.sdg_alignment)}</ReportRow>
+        <ReportRow label="Coordinators">
+          {(data.coordinator_name || []).length > 0 ? (
+            <ul className="list-disc list-inside">
+              {(data.coordinator_name || []).map((name: string, index: number) => (
+                <li key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</li>
+              ))}
+            </ul>
+          ) : 'N/A'}
+        </ReportRow>
+        <ReportRow label="Speakers/Resource Persons">
+          {(data.speakers || []).length > 0 ? (
+            <ul className="list-disc list-inside">
+              {(data.speakers || []).map((name: string, index: number) => (
+                <li key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</li>
+              ))}
+            </ul>
+          ) : 'N/A'}
+        </ReportRow>
+        <ReportRow label="Budget Estimate">₹{data.budget_estimate?.toFixed(2) || '0.00'}</ReportRow>
+        <ReportRow label="Funding Source">{data.budget_estimate > 0 ? formatArray(data.funding_source) : 'N/A (No budget)'}</ReportRow>
+        <ReportRow label="Promotion Strategy">{formatArray(data.promotion_strategy)}</ReportRow>
+        <ReportRow label="HOD Approval">{formatApproval(data.hod_approval_at)}</ReportRow>
+        <ReportRow label="Dean Approval">{formatApproval(data.dean_approval_at)}</ReportRow>
+        <ReportRow label="Principal Approval">{formatApproval(data.principal_approval_at)}</ReportRow>
+        <ReportRow label="Final Remarks">{data.remarks}</ReportRow>
+      </div>
     </div>
   );
 };
@@ -158,9 +130,8 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     toast.loading('Generating PDF...', { id: 'pdf-gen' });
 
     try {
-      // Use html2canvas to capture the content as an image
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Increase scale for better resolution
+        scale: 2,
         useCORS: true,
         logging: false,
       });
@@ -171,10 +142,8 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      // Add image to PDF
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      // Save the PDF
       const filename = `${reportData.title.replace(/\s/g, '_')}_Report.pdf`;
       pdf.save(filename);
 
@@ -200,7 +169,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
           {loading && !reportData ? (
             <div className="text-center py-10">Loading report...</div>
           ) : reportData ? (
-            <div ref={reportRef} className="space-y-4">
+            <div ref={reportRef}>
               <EventReportContent data={reportData} />
             </div>
           ) : (
@@ -220,11 +189,6 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Hidden content for printing (kept for fallback/future use, but hidden by print:hidden on dialog) */}
-      <div className="hidden print:block">
-        {reportData && <EventReportContent data={reportData} />}
-      </div>
     </>
   );
 };
