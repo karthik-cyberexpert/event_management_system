@@ -40,7 +40,10 @@ const formSchema = z.object({
   club: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.role === 'coordinator') {
-    if (!data.department && !data.club) {
+    const isDepartmentSelected = data.department && data.department !== '--none--';
+    const isClubSelected = data.club && data.club !== '--none--';
+
+    if (!isDepartmentSelected && !isClubSelected) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Coordinator must be assigned to either a Department or a Club.',
@@ -127,8 +130,15 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
     }
   };
 
-  const showDepartmentField = form.watch('role') === 'coordinator' || form.watch('role') === 'hod';
-  const showClubField = form.watch('role') === 'coordinator';
+  const role = form.watch('role');
+  const departmentValue = form.watch('department');
+  const clubValue = form.watch('club');
+
+  const showDepartmentField = role === 'coordinator' || role === 'hod';
+  const showClubField = role === 'coordinator';
+  
+  const isDepartmentSelected = departmentValue && departmentValue !== '--none--';
+  const isClubSelected = clubValue && clubValue !== '--none--';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -148,12 +158,14 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            
             {showDepartmentField && (
-              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent><SelectItem value="--none--">None</SelectItem>{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a department" /></SelectTrigger></FormControl><SelectContent>{!isClubSelected && <SelectItem value="--none--">None</SelectItem>}{departments.map((dept) => (<SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>{dept.name} ({dept.degree})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
             {showClubField && (
-              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club (optional)" /></SelectTrigger></FormControl><SelectContent><SelectItem value="--none--">None</SelectItem>{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="club" render={({ field }) => (<FormItem><FormLabel>Club</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a club (optional)" /></SelectTrigger></FormControl><SelectContent>{!isDepartmentSelected && <SelectItem value="--none--">None</SelectItem>}{clubs.map((club) => (<SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             )}
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>

@@ -119,8 +119,15 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
 
   if (!user) return null;
 
-  const showDepartmentField = form.watch('role') === 'coordinator' || form.watch('role') === 'hod';
-  const showClubField = form.watch('role') === 'coordinator';
+  const role = form.watch('role');
+  const departmentValue = form.watch('department');
+  const clubValue = form.watch('club');
+
+  const showDepartmentField = role === 'coordinator' || role === 'hod';
+  const showClubField = role === 'coordinator';
+
+  const isDepartmentSelected = departmentValue && departmentValue !== '--none--';
+  const isClubSelected = clubValue && clubValue !== '--none--';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,7 +181,7 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="--none--">None</SelectItem>
+                        {!isClubSelected && <SelectItem value="--none--">None</SelectItem>}
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={`${dept.name} (${dept.degree})`}>
                             {dept.name} ({dept.degree})
@@ -204,7 +211,7 @@ const UserDialog = ({ isOpen, onClose, onSuccess, user }: UserDialogProps) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="--none--">None</SelectItem>
+                        {!isDepartmentSelected && <SelectItem value="--none--">None</SelectItem>}
                         {clubs.map((club) => (
                           <SelectItem key={club.id} value={club.name}>{club.name}</SelectItem>
                         ))}

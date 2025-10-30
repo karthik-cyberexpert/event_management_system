@@ -427,7 +427,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 <h3 className="text-lg font-semibold border-b pb-2">Event Coordinators</h3>
                 {coordinatorFields.map((item, index) => (
                   <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
-                    <FormField control={form.control} name={`coordinators.${index}.name`} render={({ field }) => (<FormItem><FormLabel>{coordinatorFields.length > 1 ? `Coordinator ${index + 1} Name` : 'Coordinator Name'}</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name={`coordinators.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Coordinator Name</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name={`coordinators.${index}.contact`} render={({ field }) => (<FormItem><FormLabel>Contact Number (10 digits)</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="flex justify-end">{!isReadOnly && coordinatorFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeCoordinator(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
                   </div>
@@ -522,7 +522,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 {speakerFields.map((item, index) => (
                   <div key={item.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-                      <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>{speakerFields.length > 1 ? `Speaker ${index + 1} Name` : 'Speaker Name'}</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Speaker Name</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name={`speakers_list.${index}.contact`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Contact Number</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                       <div className="flex justify-end sm:col-span-1">{!isReadOnly && speakerFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
                     </div>
