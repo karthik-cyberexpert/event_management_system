@@ -50,29 +50,20 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Fetch profiles and join with auth.users to get email
-    // Note: This relies on the RLS policy on 'profiles' allowing the join/select on auth.users data.
-    // Since we are fetching all profiles, we use the '*' selector.
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        email:auth_users(email)
-      `)
-      .order('first_name', { ascending: true });
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-fetch-users');
 
-    if (error) {
-      toast.error('Failed to fetch users.');
+      if (error) throw error;
+      
+      // The Edge Function returns the combined array of users with emails
+      setUsers(data as UserWithEmail[]);
+
+    } catch (error: any) {
+      toast.error(`Failed to fetch users: ${error.message}`);
       console.error(error);
-    } else {
-      // Map the data to flatten the email structure
-      const mappedUsers: UserWithEmail[] = data.map((user: any) => ({
-        ...user,
-        email: user.email?.email || 'N/A', // Extract email from the joined object
-      }));
-      setUsers(mappedUsers);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
