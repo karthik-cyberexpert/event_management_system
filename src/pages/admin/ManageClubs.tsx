@@ -36,48 +36,43 @@ type Club = {
   name: string;
 };
 
-// Extend Profile type locally to include email for this admin view
-type UserWithEmail = Profile & {
-  email: string;
-};
-
 type ClubDetails = Club & {
-  coordinators: UserWithEmail[];
+  coordinators: Profile[];
 };
 
 const ManageClubs = () => {
   const [clubs, setClubs] = useState<ClubDetails[]>([]);
-  const [allUsers, setAllUsers] = useState<UserWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
 
-  const fetchAllData = async () => {
+  const fetchClubs = async () => {
     setLoading(true);
     
-    const [clubsResponse, usersResponse] = await Promise.all([
-      supabase.from('clubs').select('*').order('name', { ascending: true }),
-      supabase.functions.invoke('admin-fetch-users'),
-    ]);
+    const { data: clubsData, error: clubsError } = await supabase
+      .from('clubs')
+      .select('*')
+      .order('name', { ascending: true });
 
-    if (clubsResponse.error) {
+    if (clubsError) {
       toast.error('Failed to fetch clubs.');
       setLoading(false);
       return;
     }
     
-    if (usersResponse.error) {
-      toast.error('Failed to fetch user profiles.');
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, role, club')
+      .eq('role', 'coordinator');
+
+    if (profilesError) {
+      toast.error('Failed to fetch coordinator roles.');
       setLoading(false);
       return;
     }
 
-    const clubsData = clubsResponse.data as Club[];
-    const profilesData = usersResponse.data as UserWithEmail[];
-    setAllUsers(profilesData);
-
     const clubsWithDetails = clubsData.map(club => {
-      const coordinators = profilesData.filter(p => p.role === 'coordinator' && p.club === club.name);
+      const coordinators = profilesData.filter(p => p.club === club.name);
 
       return {
         ...club,
@@ -90,7 +85,7 @@ const ManageClubs = () => {
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchClubs();
   }, []);
 
   const handleAdd = () => {
@@ -109,7 +104,7 @@ const ManageClubs = () => {
       toast.error(`Failed to delete club: ${error.message}`);
     } else {
       toast.success('Club deleted successfully.');
-      fetchAllData();
+      fetchClubs();
     }
   };
 
@@ -125,9 +120,8 @@ const ManageClubs = () => {
       <ClubDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        onSuccess={fetchAllData}
+        onSuccess={fetchClubs}
         club={selectedClub}
-        allUsers={allUsers} // Pass all users for assignment
       />
 
       <div className="bg-white rounded-lg shadow">
@@ -163,7 +157,7 @@ const ManageClubs = () => {
                         {(club.coordinators?.length || 0) > 0 ? (
                           club.coordinators.map(c => (
                             <DropdownMenuItem key={c.id}>
-                              {c.first_name} {c.last_name} ({c.email})
+                              {c.first_name} {c.last_name}
                             </DropdownMenuItem>
                           ))
                         ) : (

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import DepartmentDialog from '@/components/DepartmentDialog';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Profile } from '@/contexts/AuthContext';
 
 type Department = {
@@ -37,46 +38,41 @@ type Department = {
   degree: 'B.E' | 'B.Tech' | 'MCA' | 'MBA';
 };
 
-// Extend Profile type locally to include email for this admin view
-type UserWithEmail = Profile & {
-  email: string;
-};
-
 type DepartmentDetails = Department & {
-  hod: UserWithEmail | null;
-  coordinators: UserWithEmail[];
+  hod: Profile | null;
+  coordinators: Profile[];
 };
 
 const ManageDepartments = () => {
   const [departments, setDepartments] = useState<DepartmentDetails[]>([]);
-  const [allUsers, setAllUsers] = useState<UserWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
-  const fetchAllData = async () => {
+  const fetchDepartments = async () => {
     setLoading(true);
     
-    const [departmentsResponse, usersResponse] = await Promise.all([
-      supabase.from('departments').select('*').order('name', { ascending: true }),
-      supabase.functions.invoke('admin-fetch-users'),
-    ]);
+    const { data: departmentsData, error: departmentsError } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name', { ascending: true });
 
-    if (departmentsResponse.error) {
+    if (departmentsError) {
       toast.error('Failed to fetch departments.');
       setLoading(false);
       return;
     }
-    
-    if (usersResponse.error) {
-      toast.error('Failed to fetch user profiles.');
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, role, department')
+      .in('role', ['hod', 'coordinator']);
+
+    if (profilesError) {
+      toast.error('Failed to fetch user roles.');
       setLoading(false);
       return;
     }
-
-    const departmentsData = departmentsResponse.data as Department[];
-    const profilesData = usersResponse.data as UserWithEmail[];
-    setAllUsers(profilesData);
 
     const departmentsWithDetails = departmentsData.map(dept => {
       const departmentIdentifier = `${dept.name} (${dept.degree})`;
@@ -96,7 +92,7 @@ const ManageDepartments = () => {
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchDepartments();
   }, []);
 
   const handleAdd = () => {
@@ -115,7 +111,7 @@ const ManageDepartments = () => {
       toast.error(`Failed to delete department: ${error.message}`);
     } else {
       toast.success('Department deleted successfully.');
-      fetchAllData();
+      fetchDepartments();
     }
   };
 
@@ -131,9 +127,8 @@ const ManageDepartments = () => {
       <DepartmentDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        onSuccess={fetchAllData}
+        onSuccess={fetchDepartments}
         department={selectedDepartment}
-        allUsers={allUsers} // Pass all users for assignment
       />
 
       <div className="bg-white rounded-lg shadow">
@@ -177,7 +172,7 @@ const ManageDepartments = () => {
                         {(department.coordinators?.length || 0) > 0 ? (
                           department.coordinators.map(c => (
                             <DropdownMenuItem key={c.id}>
-                              {c.first_name} {c.last_name} ({c.email})
+                              {c.first_name} {c.last_name}
                             </DropdownMenuItem>
                           ))
                         ) : (
