@@ -55,7 +55,11 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
         <ReportRow label="Mode of Event"><span className="capitalize">{data.mode_of_event}</span></ReportRow>
         <ReportRow label="Date">{format(new Date(data.event_date), 'PPP')}</ReportRow>
         <ReportRow label="Time">{data.start_time} - {data.end_time}</ReportRow>
-        <ReportRow label="Venue">{data.venues?.name} ({data.venues?.location || 'N/A'})</ReportRow>
+        <ReportRow label="Venue">
+          {data.venues?.name 
+            ? `${data.venues.name} (${data.venues.location || 'N/A'})` 
+            : 'N/A'}
+        </ReportRow>
         <ReportRow label="Expected Participants">{data.expected_audience}</ReportRow>
         <ReportRow label="Description">{data.description}</ReportRow>
         <ReportRow label="Objective">{data.objective}</ReportRow>
