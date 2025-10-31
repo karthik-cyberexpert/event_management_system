@@ -165,14 +165,14 @@ const AllEvents = () => {
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Venue</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Dept/Club/Society</TableHead> {/* Updated Header */}
-                    {isApprover && <TableHead>Actions</TableHead>}
+                  <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <TableHead className="text-primary-foreground">Event</TableHead>
+                    <TableHead className="text-primary-foreground">Code</TableHead>
+                    <TableHead className="text-primary-foreground">Date</TableHead>
+                    <TableHead className="text-primary-foreground">Venue</TableHead>
+                    <TableHead className="text-primary-foreground">Status</TableHead>
+                    <TableHead className="text-primary-foreground">Dept/Club/Society</TableHead> {/* Updated Header */}
+                    {isApprover && <TableHead className="text-primary-foreground">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -186,7 +186,7 @@ const AllEvents = () => {
                     </TableRow>
                   ) : (
                     filteredEvents.map((event) => (
-                      <TableRow key={event.id} className="bg-muted hover:bg-muted/80 transition-colors">
+                      <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                         <TableCell className="font-medium">{event.title}</TableCell>
                         <TableCell className="font-mono text-xs">{event.unique_code || 'N/A'}</TableCell>
                         <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>

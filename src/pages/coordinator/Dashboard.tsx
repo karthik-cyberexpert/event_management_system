@@ -196,12 +196,12 @@ const CoordinatorDashboard = () => {
           <div className="bg-card rounded-lg shadow border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted hover:bg-muted">
-                  <TableHead className="text-foreground font-semibold">Title</TableHead>
-                  <TableHead className="text-foreground font-semibold">Venue</TableHead>
-                  <TableHead className="text-foreground font-semibold">Date</TableHead>
-                  <TableHead className="text-foreground font-semibold">Status</TableHead>
-                  <TableHead className="text-foreground font-semibold text-right">Actions</TableHead>
+                <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <TableHead className="text-primary-foreground font-semibold">Title</TableHead>
+                  <TableHead className="text-primary-foreground font-semibold">Venue</TableHead>
+                  <TableHead className="text-primary-foreground font-semibold">Date</TableHead>
+                  <TableHead className="text-primary-foreground font-semibold">Status</TableHead>
+                  <TableHead className="text-primary-foreground font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -215,7 +215,7 @@ const CoordinatorDashboard = () => {
                   </TableRow>
                 ) : (
                   myEvents.map((event) => (
-                    <TableRow key={event.id} className="bg-muted hover:bg-muted/80 transition-colors">
+                    <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                       <TableCell className="font-medium">{event.title}</TableCell>
                       <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                       <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>

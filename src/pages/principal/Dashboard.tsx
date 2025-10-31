@@ -79,14 +79,14 @@ const PrincipalDashboard = () => {
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Submitted Coordinator</TableHead>
-                <TableHead>Dept/Club/Society</TableHead>
-                <TableHead>Venue</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+              <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <TableHead className="text-primary-foreground">Title</TableHead>
+                <TableHead className="text-primary-foreground">Submitted Coordinator</TableHead>
+                <TableHead className="text-primary-foreground">Dept/Club/Society</TableHead>
+                <TableHead className="text-primary-foreground">Venue</TableHead>
+                <TableHead className="text-primary-foreground">Date</TableHead>
+                <TableHead className="text-primary-foreground">Status</TableHead>
+                <TableHead className="text-primary-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,7 +100,7 @@ const PrincipalDashboard = () => {
                 </TableRow>
               ) : (
                 events.map((event) => (
-                  <TableRow key={event.id} className="bg-muted hover:bg-muted/80 transition-colors">
+                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                     <TableCell className="font-medium">{event.title}</TableCell>
                     <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                     <TableCell>{event.department_club || 'N/A'}</TableCell>
