@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import EventActionDialog from '@/components/EventActionDialog';
 import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { List, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
@@ -27,13 +30,13 @@ const statusColors = {
 };
 
 const HodDashboard = () => {
-  const [events, setEvents] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Fetch only events that are pending HOD action.
+    // Fetch all events visible to the HOD (RLS handles filtering by department and status)
     const { data, error } = await supabase
       .from('events')
       .select(`
@@ -41,7 +44,6 @@ const HodDashboard = () => {
         venues ( name ),
         submitted_by:profiles ( first_name, last_name )
       `)
-      .in('status', ['pending_hod', 'returned_to_hod'])
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -52,7 +54,7 @@ const HodDashboard = () => {
         ...event,
         profiles: event.submitted_by,
       }));
-      setEvents(mappedData);
+      setAllEvents(mappedData);
     }
     setLoading(false);
   };
@@ -71,11 +73,15 @@ const HodDashboard = () => {
     return status === 'pending_hod' || status === 'returned_to_hod';
   };
 
-  return (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">Events Pending Approval</h2>
-      
-      <div className="bg-white rounded-lg shadow">
+  const pendingEvents = allEvents.filter(e => isReviewable(e));
+  const otherEvents = allEvents.filter(e => !isReviewable(e));
+
+  const renderEventTable = (eventsList: any[], title: string) => (
+    <Card className="bg-white rounded-lg shadow">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -84,7 +90,7 @@ const HodDashboard = () => {
               <TableHead>Venue</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -92,12 +98,12 @@ const HodDashboard = () => {
               <TableRow>
                 <TableCell colSpan={6} className="text-center">Loading...</TableCell>
               </TableRow>
-            ) : events.length === 0 ? (
+            ) : eventsList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No events are currently pending your approval.</TableCell>
+                <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
               </TableRow>
             ) : (
-              events.map((event) => (
+              eventsList.map((event) => (
                 <TableRow key={event.id}>
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
@@ -108,7 +114,7 @@ const HodDashboard = () => {
                       {event.status.replace(/_/g, ' ')}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     <Button 
                       variant={isReviewable(event) ? 'outline' : 'ghost'} 
                       size="sm" 
@@ -122,7 +128,34 @@ const HodDashboard = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold">HOD Dashboard</h2>
+      
+      <Tabs defaultValue="pending">
+        <TabsList className="mb-4 bg-muted p-1 rounded-lg">
+          <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Pending My Action ({pendingEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <List className="w-4 h-4 mr-2" />
+            All Department Events ({allEvents.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          {renderEventTable(pendingEvents, "Events Requiring My Approval")}
+        </TabsContent>
+        
+        <TabsContent value="all">
+          {renderEventTable(allEvents, "All Events Submitted by Department Coordinators")}
+        </TabsContent>
+      </Tabs>
 
       {selectedEvent && (
         <EventActionDialog
