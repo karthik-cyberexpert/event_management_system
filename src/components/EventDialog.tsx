@@ -34,10 +34,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Plus, Trash2 } from 'lucide-react';
+import { Terminal, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import TimePicker from './TimePicker';
+import ReturnReasonDialog from './ReturnReasonDialog'; // New Import
 
 // --- Constants for Checkbox Groups ---
 
@@ -174,6 +175,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false); // New state for reasons dialog
   
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
@@ -358,6 +360,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
     let error;
     if (isEditMode) {
+      // When resubmitting, reset remarks and status to pending_hod
       const { error: updateError } = await supabase.from('events').update({ ...eventData, status: 'pending_hod', remarks: null }).eq('id', event.id);
       error = updateError;
     } else {
@@ -401,197 +404,231 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     }
     return <FormField control={form.control} name="department_club" render={({ field }) => (<FormItem><FormLabel>Organizing Department/Club/Society</FormLabel><FormControl><Input placeholder="Enter department, club, or society name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />;
   };
+  
+  const isReturnedOrRejected = event && ['returned_to_coordinator', 'returned_to_hod', 'returned_to_dean', 'rejected'].includes(event.status);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{getDialogTitle()}</DialogTitle>
-          <DialogDescription>{getDialogDescription()}</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{getDialogTitle()}</DialogTitle>
+            <DialogDescription>{getDialogDescription()}</DialogDescription>
+          </DialogHeader>
 
-        {(isEditMode || isReadOnly) && event?.remarks && (
-          <Alert><Terminal className="h-4 w-4" /><AlertTitle>Approver Remarks</AlertTitle><AlertDescription>{event.remarks}</AlertDescription></Alert>
-        )}
+          {(isEditMode || isReadOnly) && isReturnedOrRejected && (
+            <Alert variant="destructive">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Event Status: {event.status.replace(/_/g, ' ').toUpperCase()}</AlertTitle>
+              <AlertDescription>
+                This event was returned or rejected. Please review the remarks below or click "View Remarks History" for details.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="md:col-span-2 space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
-                <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="md:col-span-2">{renderDepartmentClubField()}</div>
-
-              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
-                <h3 className="text-lg font-semibold border-b pb-2">Event Coordinators</h3>
-                {coordinatorFields.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
-                    <FormField control={form.control} name={`coordinators.${index}.name`} render={({ field }) => (<FormItem><FormLabel>Coordinator Name</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name={`coordinators.${index}.contact`} render={({ field }) => (<FormItem><FormLabel>Contact Number (10 digits)</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                    <div className="flex justify-end">{!isReadOnly && coordinatorFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeCoordinator(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
-                  </div>
-                ))}
-                {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendCoordinator({ name: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Coordinator</Button>)}
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="event_date" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From Date</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          {...field} 
-                          disabled={isReadOnly} 
-                          min={today}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="end_date" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>To Date (optional)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          {...field} 
-                          disabled={isReadOnly} 
-                          value={field.value ?? ''} 
-                          min={today}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                  <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Event Title</FormLabel><FormControl><Input placeholder="Event Title" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="start_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start Time</FormLabel>
-                        <FormControl>
-                          <TimePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            disabled={isReadOnly}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="end_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End Time</FormLabel>
-                        <FormControl>
-                          <TimePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            disabled={isReadOnly}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}<SelectItem value="other">Other</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                {selectedVenueId === 'other' && (<FormField control={form.control} name="other_venue_details" render={({ field }) => (<FormItem><FormLabel>Other Venue Details</FormLabel><FormControl><Textarea placeholder="Please specify the venue name and location" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />)}
-              </div>
 
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
-                <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
-              </div>
+                <div className="md:col-span-2">{renderDepartmentClubField()}</div>
 
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Event Category</h3>
-                <FormField control={form.control} name="category" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{EVENT_CATEGORIES.map((item) => (<FormField key={item} control={form.control} name="category" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('category').includes('others') && (<FormField control={form.control} name="category_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Category</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-              
-              <div className="space-y-4 md:col-span-2">
-                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Key Indicator / Detailed Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
-                <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Target Audience</h3>
-                <FormField control={form.control} name="target_audience" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{TARGET_AUDIENCES.map((item) => (<FormField key={item} control={form.control} name="target_audience" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item}</FormLabel></FormItem>)} />))}</div>{form.watch('target_audience').includes('others') && (<FormField control={form.control} name="target_audience_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Audience</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-
-              <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
-                <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person Details</h3>
-                {speakerFields.map((item, index) => (
-                  <div key={item.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-                      <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Speaker Name</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name={`speakers_list.${index}.contact`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Contact Number</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                      <div className="flex justify-end sm:col-span-1">{!isReadOnly && speakerFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
+                <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold border-b pb-2">Event Coordinators</h3>
+                  {coordinatorFields.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-4 last:border-b-0 last:pb-0">
+                      <FormField control={form.control} name={`coordinators.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Coordinator Name</FormLabel><FormControl><Input placeholder="Coordinator Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name={`coordinators.${index}.contact`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Contact Number (10 digits)</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                      <div className="flex justify-end sm:col-span-1">{!isReadOnly && coordinatorFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeCoordinator(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
                     </div>
-                    <FormField control={form.control} name={`speakers_list.${index}.details`} render={({ field }) => (<FormItem><FormLabel>Designation/Organization</FormLabel><FormControl><Textarea placeholder="e.g., Professor, Dept. of CSE, IIT Madras" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                ))}
-                {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendSpeaker({ name: '', details: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Speaker</Button>)}
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Budget & Funding</h3>
-                <FormField control={form.control} name="budget_estimate" render={({ field }) => (<FormItem><FormLabel>Budget Estimate (in Rupees)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
-                <div className={cn(!requiresFundingSource && 'opacity-50 pointer-events-none', 'transition-opacity')}><FormField control={form.control} name="funding_source" render={() => (<FormItem><FormLabel>Funding Source (Required if budget &gt; 0)</FormLabel><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{FUNDING_SOURCES.map((item) => (<FormField key={item} control={form.control} name="funding_source" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly || !requiresFundingSource} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('funding_source')?.includes('others') && (<FormField control={form.control} name="funding_source_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Funding Source</FormLabel><FormControl><Textarea {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} /></div>
-              </div>
-
-              <div className="space-y-4 md:col-span-2">
-                <h3 className="text-lg font-semibold border-b pb-2">Event Promotion Strategy</h3>
-                <FormField control={form.control} name="promotion_strategy" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{PROMOTION_STRATEGIES.map((item) => (<FormField key={item} control={form.control} name="promotion_strategy" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('promotion_strategy').includes('others') && (<FormField control={form.control} name="promotion_strategy_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Promotion Strategy</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
-              </div>
-            </div>
-
-            {(isEditMode || isReadOnly) && event && (
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <FormItem><FormLabel>HOD Approval</FormLabel><Input value={event.hod_approval_at ? `Approved on ${format(new Date(event.hod_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.hod_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
-                  <FormItem><FormLabel>Dean Industrial Approval</FormLabel><Input value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
-                  <FormItem><FormLabel>Principal Approval</FormLabel><Input value={event.principal_approval_at ? `Approved on ${format(new Date(event.principal_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.principal_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
+                  ))}
+                  {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendCoordinator({ name: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Coordinator</Button>)}
                 </div>
-                <FormItem><FormLabel>Remarks (Last Approver)</FormLabel><Textarea value={event.remarks || 'N/A'} disabled /></FormItem>
-              </div>
-            )}
 
-            <DialogFooter>
-              {isReadOnly ? (<Button type="button" variant="outline" onClick={onClose}>Close</Button>) : (<><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : (isEditMode ? 'Update & Resubmit' : 'Submit for Approval')}</Button></>)}
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Schedule & Location</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="event_date" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>From Date</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="date" 
+                            {...field} 
+                            disabled={isReadOnly} 
+                            min={today}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="end_date" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>To Date (optional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="date" 
+                            {...field} 
+                            disabled={isReadOnly} 
+                            value={field.value ?? ''} 
+                            min={today}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="start_time"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Time</FormLabel>
+                          <FormControl>
+                            <TimePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={isReadOnly}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="end_time"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Time</FormLabel>
+                          <FormControl>
+                            <TimePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={isReadOnly}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField control={form.control} name="venue_id" render={({ field }) => (<FormItem><FormLabel>Venue</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select a venue" /></SelectTrigger></FormControl><SelectContent>{venues.map((venue) => (<SelectItem key={venue.id} value={venue.id}>{venue.name}</SelectItem>))}<SelectItem value="other">Other</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                  {selectedVenueId === 'other' && (<FormField control={form.control} name="other_venue_details" render={({ field }) => (<FormItem><FormLabel>Other Venue Details</FormLabel><FormControl><Textarea placeholder="Please specify the venue name and location" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />)}
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
+                  <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Event Category</h3>
+                  <FormField control={form.control} name="category" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{EVENT_CATEGORIES.map((item) => (<FormField key={item} control={form.control} name="category" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('category').includes('others') && (<FormField control={form.control} name="category_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Category</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+                
+                <div className="space-y-4 md:col-span-2">
+                  <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Key Indicator / Detailed Description</FormLabel><FormControl><Textarea placeholder="Detailed description of the event" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
+                  <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Target Audience</h3>
+                  <FormField control={form.control} name="target_audience" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{TARGET_AUDIENCES.map((item) => (<FormField key={item} control={form.control} name="target_audience" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item}</FormLabel></FormItem>)} />))}</div>{form.watch('target_audience').includes('others') && (<FormField control={form.control} name="target_audience_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Audience</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+
+                <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold border-b pb-2">Speakers / Resource Person Details</h3>
+                  {speakerFields.map((item, index) => (
+                    <div key={item.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                        <FormField control={form.control} name={`speakers_list.${index}.name`} render={({ field }) => (<FormItem className="sm:col-span-2"><FormLabel>Speaker Name</FormLabel><FormControl><Input placeholder="Speaker Name" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name={`speakers_list.${index}.contact`} render={({ field }) => (<FormItem className="sm:col-span-1"><FormLabel>Contact Number</FormLabel><FormControl><Input type="tel" placeholder="9876543210" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                        <div className="flex justify-end sm:col-span-1">{!isReadOnly && speakerFields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => removeSpeaker(index)}><Trash2 className="h-4 w-4" /></Button>)}</div>
+                      </div>
+                      <FormField control={form.control} name={`speakers_list.${index}.details`} render={({ field }) => (<FormItem><FormLabel>Designation/Organization</FormLabel><FormControl><Textarea placeholder="e.g., Professor, Dept. of CSE, IIT Madras" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                  ))}
+                  {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendSpeaker({ name: '', details: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Speaker</Button>)}
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Budget & Funding</h3>
+                  <FormField control={form.control} name="budget_estimate" render={({ field }) => (<FormItem><FormLabel>Budget Estimate (in Rupees)</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className={cn(!requiresFundingSource && 'opacity-50 pointer-events-none', 'transition-opacity')}><FormField control={form.control} name="funding_source" render={() => (<FormItem><FormLabel>Funding Source (Required if budget &gt; 0)</FormLabel><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{FUNDING_SOURCES.map((item) => (<FormField key={item} control={form.control} name="funding_source" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly || !requiresFundingSource} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('funding_source')?.includes('others') && (<FormField control={form.control} name="funding_source_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Funding Source</FormLabel><FormControl><Textarea {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} /></div>
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Event Promotion Strategy</h3>
+                  <FormField control={form.control} name="promotion_strategy" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{PROMOTION_STRATEGIES.map((item) => (<FormField key={item} control={form.control} name="promotion_strategy" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('promotion_strategy').includes('others') && (<FormField control={form.control} name="promotion_strategy_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Promotion Strategy</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
+                </div>
+              </div>
+
+              {(isEditMode || isReadOnly) && event && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-lg font-semibold border-b pb-2">Approval Status</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <FormItem><FormLabel>HOD Approval</FormLabel><Input value={event.hod_approval_at ? `Approved on ${format(new Date(event.hod_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.hod_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
+                    <FormItem><FormLabel>Dean Industrial Approval</FormLabel><Input value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
+                    <FormItem><FormLabel>Principal Approval</FormLabel><Input value={event.principal_approval_at ? `Approved on ${format(new Date(event.principal_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.principal_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
+                  </div>
+                  <FormItem>
+                    <div className="flex justify-between items-center">
+                      <FormLabel>Last Approver Remarks</FormLabel>
+                      {isReturnedOrRejected && (
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          size="sm" 
+                          onClick={() => setIsReasonDialogOpen(true)}
+                          className="p-0 h-auto"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1" /> View Remarks History
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea value={event.remarks || 'N/A'} disabled />
+                  </FormItem>
+                </div>
+              )}
+
+              <DialogFooter>
+                {isReadOnly ? (<Button type="button" variant="outline" onClick={onClose}>Close</Button>) : (<><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : (isEditMode ? 'Update & Resubmit' : 'Submit for Approval')}</Button></>)}
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {event && (
+        <ReturnReasonDialog
+          event={event}
+          isOpen={isReasonDialogOpen}
+          onClose={() => setIsReasonDialogOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

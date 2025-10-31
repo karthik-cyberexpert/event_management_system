@@ -40,12 +40,10 @@ type EventActionDialogProps = {
 const roleActions = {
   hod: {
     approve: { label: 'Approve & Forward to Dean', status: 'pending_dean', timestampField: 'hod_approval_at' },
-    reject: { label: 'Reject', status: 'rejected' },
     return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
   dean: {
     approve: { label: 'Approve & Forward to Principal', status: 'pending_principal', timestampField: 'dean_approval_at' },
-    reject: { label: 'Reject', status: 'rejected' },
     return: { label: 'Return to HOD', status: 'returned_to_hod' },
   },
   principal: {
@@ -84,10 +82,11 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
   });
 
   const handleAction = async (actionType: 'approve' | 'reject' | 'return') => {
-    const action = actions[actionType];
+    const action = actions[actionType as keyof typeof actions];
     const remarks = form.getValues('remarks');
     
-    if ((actionType === 'reject' || actionType === 'return') && !remarks) {
+    // Enforce mandatory remarks for 'return' and 'reject' actions
+    if ((actionType === 'reject' || actionType === 'return') && !remarks?.trim()) {
       form.setError('remarks', { type: 'manual', message: 'Remarks are required to reject or return an event.' });
       return;
     }
@@ -217,13 +216,15 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
 
         <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
           <div className="flex gap-2">
-            <Button
-              variant="destructive"
-              onClick={() => handleAction('reject')}
-              disabled={isSubmitting}
-            >
-              {actions.reject.label}
-            </Button>
+            {role === 'principal' && (
+              <Button
+                variant="destructive"
+                onClick={() => handleAction('reject')}
+                disabled={isSubmitting}
+              >
+                {actions.reject.label}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => handleAction('return')}
