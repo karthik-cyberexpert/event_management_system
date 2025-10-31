@@ -17,12 +17,18 @@ type Notification = {
   message: string;
   is_read: boolean;
   created_at: string;
+  event_id: string | null;
 };
 
-const NotificationBell = () => {
+type NotificationBellProps = {
+  onNotificationClick: (notification: Notification) => void;
+};
+
+const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -36,28 +42,30 @@ const NotificationBell = () => {
     if (error) {
       console.error('Error fetching notifications:', error);
     } else {
-      setNotifications(data);
+      setNotifications(data as Notification[]);
       setUnreadCount(data.filter(n => !n.is_read).length);
     }
   };
 
   useEffect(() => {
-    fetchNotifications();
+    if (user) {
+      fetchNotifications();
 
-    const channel = supabase
-      .channel('realtime-notifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user?.id}` },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
+      const channel = supabase
+        .channel('realtime-notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchNotifications();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user]);
 
   const handleMarkAllAsRead = async () => {
@@ -76,8 +84,20 @@ const NotificationBell = () => {
     }
   };
 
+  const handlePopoverOpenChange = (open: boolean) => {
+    setIsPopoverOpen(open);
+    if (!open) {
+      handleMarkAllAsRead();
+    }
+  };
+
+  const handleItemClick = (notification: Notification) => {
+    onNotificationClick(notification);
+    setIsPopoverOpen(false); // Close popover on click
+  };
+
   return (
-    <Popover onOpenChange={(open) => { if (!open) handleMarkAllAsRead() }}>
+    <Popover open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -98,9 +118,11 @@ const NotificationBell = () => {
           ) : (
             <div className="p-2">
               {notifications.map((notification) => (
-                <div
+                <button
                   key={notification.id}
-                  className={`mb-2 items-start pb-2 last:mb-0 last:pb-0 border-b last:border-none ${!notification.is_read ? 'font-semibold' : 'text-muted-foreground'}`}
+                  onClick={() => handleItemClick(notification)}
+                  disabled={!notification.event_id}
+                  className={`w-full text-left mb-2 items-start pb-2 last:mb-0 last:pb-0 border-b last:border-none p-2 rounded-md transition-colors ${!notification.is_read ? 'font-semibold' : 'text-muted-foreground'} ${notification.event_id ? 'hover:bg-accent cursor-pointer' : 'cursor-default'}`}
                 >
                   <div className="space-y-1">
                     <p className="text-sm leading-snug">
@@ -110,7 +132,7 @@ const NotificationBell = () => {
                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
