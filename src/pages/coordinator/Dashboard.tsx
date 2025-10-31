@@ -131,8 +131,9 @@ const CoordinatorDashboard = () => {
     setSelectedEvent(null);
   };
 
-  const handleSuccess = () => {
-    fetchEvents();
+  // Make handleSuccess async and await fetchEvents to ensure the list is updated before proceeding.
+  const handleSuccess = async () => {
+    await fetchEvents();
     handleDialogClose();
   };
   
