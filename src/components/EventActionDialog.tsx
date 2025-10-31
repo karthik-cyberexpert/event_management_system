@@ -55,6 +55,25 @@ const roleActions = {
   },
 };
 
+const formatTime12Hour = (time24: string | null | undefined): string => {
+  if (!time24) return 'N/A';
+  try {
+    const [h, m] = time24.split(':');
+    const hour = parseInt(h, 10);
+    const minute = parseInt(m, 10);
+
+    const period = hour >= 12 ? 'PM' : 'AM';
+    let hour12 = hour % 12;
+    if (hour12 === 0) {
+      hour12 = 12;
+    }
+
+    return `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${period}`;
+  } catch (error) {
+    return time24; // Fallback to original string if format is unexpected
+  }
+};
+
 const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: EventActionDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const actions = roleActions[role];
@@ -149,7 +168,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
               {renderCoordinators()}
             </div>
             <div><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</div>
-            <div><strong>Time:</strong> {event.start_time} - {event.end_time}</div>
+            <div><strong>Time:</strong> {formatTime12Hour(event.start_time)} - {formatTime12Hour(event.end_time)}</div>
             <div><strong>Venue:</strong> {event.venues?.name || 'N/A'}</div>
             <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
           </div>

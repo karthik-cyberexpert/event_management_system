@@ -23,6 +23,25 @@ type EventReportDialogProps = {
 
 type ReportData = any;
 
+const formatTime12Hour = (time24: string | null | undefined): string => {
+  if (!time24) return 'N/A';
+  try {
+    const [h, m] = time24.split(':');
+    const hour = parseInt(h, 10);
+    const minute = parseInt(m, 10);
+
+    const period = hour >= 12 ? 'PM' : 'AM';
+    let hour12 = hour % 12;
+    if (hour12 === 0) {
+      hour12 = 12;
+    }
+
+    return `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${period}`;
+  } catch (error) {
+    return time24;
+  }
+};
+
 const ReportRow = ({ label, value }: { label: string; value: any }) => {
   const processValue = (val: any): React.ReactNode => {
     if (val === null || val === undefined) return 'N/A';
@@ -105,7 +124,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
           <ReportRow label="Department/Club" value={data.department_club} />
           <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
           <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
-          <ReportRow label="Time" value={`${data.start_time} - ${data.end_time}`} />
+          <ReportRow label="Time" value={`${formatTime12Hour(data.start_time)} - ${formatTime12Hour(data.end_time)}`} />
           <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
           <ReportRow label="Expected Participants" value={data.expected_audience} />
           <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
