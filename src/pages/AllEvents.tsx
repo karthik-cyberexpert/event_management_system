@@ -27,6 +27,11 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import EventActionDialog from '@/components/EventActionDialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const statusColors: { [key: string]: string } = {
   pending_hod: 'bg-yellow-500',
@@ -106,7 +111,7 @@ const AllEvents = () => {
     const role = profile.role;
     const status = event.status;
     
-    if (role === 'hod' && (status === 'pending_hod' || status === 'returned_to_hod')) return true;
+    if (role === 'hod' && (status === 'pending_hod' || status === 'returned_to_hod' || status === 'resubmitted')) return true;
     if (role === 'dean' && (status === 'pending_dean' || status === 'returned_to_dean')) return true;
     if (role === 'principal' && status === 'pending_principal') return true;
     
@@ -166,7 +171,7 @@ const AllEvents = () => {
                     <TableHead>Date</TableHead>
                     <TableHead>Venue</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Organizer</TableHead>
+                    <TableHead>Dept/Club/Society</TableHead> {/* Updated Header */}
                     {isApprover && <TableHead>Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -191,7 +196,18 @@ const AllEvents = () => {
                             {event.status.replace(/_/g, ' ')}
                           </Badge>
                         </TableCell>
-                        <TableCell>{event.coordinator?.first_name} {event.coordinator?.last_name}</TableCell>
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-default border-b border-dashed border-gray-400">
+                                {event.department_club || 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Submitted by: {event.coordinator?.first_name} {event.coordinator?.last_name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableCell>
                         {isApprover && (
                           <TableCell>
                             {isReviewable(event) ? (
