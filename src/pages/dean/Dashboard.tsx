@@ -78,14 +78,14 @@ const DeanDashboard = () => {
       <div className="bg-white rounded-lg shadow">
         <Table>
           <TableHeader>
-            <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <TableHead className="text-primary-foreground">Title</TableHead>
-              <TableHead className="text-primary-foreground">Submitted Coordinator</TableHead>
-              <TableHead className="text-primary-foreground">Dept/Club/Society</TableHead>
-              <TableHead className="text-primary-foreground">Venue</TableHead>
-              <TableHead className="text-primary-foreground">Date</TableHead>
-              <TableHead className="text-primary-foreground">Status</TableHead>
-              <TableHead className="text-primary-foreground">Actions</TableHead>
+            <TableRow className="bg-background border-b">
+              <TableHead className="text-primary">Title</TableHead>
+              <TableHead className="text-primary">Submitted Coordinator</TableHead>
+              <TableHead className="text-primary">Dept/Club/Society</TableHead>
+              <TableHead className="text-primary">Venue</TableHead>
+              <TableHead className="text-primary">Date</TableHead>
+              <TableHead className="text-primary">Status</TableHead>
+              <TableHead className="text-primary">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -98,29 +98,34 @@ const DeanDashboard = () => {
                 <TableCell colSpan={7} className="text-center">No events are currently pending your approval.</TableCell>
               </TableRow>
             ) : (
-              events.map((event) => (
-                <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                  <TableCell className="font-medium">{event.title}</TableCell>
-                  <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                  <TableCell>{event.department_club || 'N/A'}</TableCell>
-                  <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
-                  <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
-                      {event.status.replace(/_/g, ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant={isReviewable(event) ? 'outline' : 'ghost'} 
-                      size="sm" 
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      {isReviewable(event) ? 'Review' : 'View'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              events.map((event: any) => {
+                const isPending = isReviewable(event);
+                return (
+                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
+                    <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
+                    <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                    <TableCell>{event.department_club || 'N/A'}</TableCell>
+                    <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
+                      {event.venues?.name || event.other_venue_details || 'N/A'}
+                    </TableCell>
+                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
+                        {event.status.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant={isReviewable(event) ? 'outline' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setSelectedEvent(event)}
+                      >
+                        {isReviewable(event) ? 'Review' : 'View'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

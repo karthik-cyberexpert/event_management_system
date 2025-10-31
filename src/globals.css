@@ -4,85 +4,85 @@
 
 @layer base {
   :root {
-    /* Light Theme: White and Dark Blue */
-    --background: 0 0% 100%; /* White */
-    --foreground: 220 30% 20%; /* Deep Navy/Dark Blue */
+    /* Light Theme with Soft Lavender and Blue Gradient Background */
+    --background: 260 25% 95%; /* Soft Lavender Base */
+    --foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 220 30% 20%;
+    --card: 260 25% 98%; /* Very Light Lavender Card */
+    --card-foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 220 30% 20%;
+    --popover: 260 25% 98%; /* Very Light Lavender Popover */
+    --popover-foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --primary: 220 70% 40%; /* Vibrant Dark Blue */
+    --primary: 211 100% 45%; /* Professional Blue */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 210 20% 30%; /* Medium Dark Blue */
-    --secondary-foreground: 0 0% 100%; /* White */
+    --secondary: 197 71% 73%; /* Light Blue */
+    --secondary-foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --muted: 210 40% 96%; /* Very light blue/gray (Whitesmoke) */
-    --muted-foreground: 215 16% 47%;
+    --muted: 260 20% 90%; /* Muted Lavender */
+    --muted-foreground: 215 16% 47%; /* Muted Blue Gray */
 
-    --accent: 210 40% 92%; /* Slightly darker light blue/gray */
-    --accent-foreground: 220 30% 20%;
+    --accent: 201 38% 85%; /* Sky Blue */
+    --accent-foreground: 219 33% 17%; /* Dark Blue Gray */
 
     --destructive: 0 84% 60%; /* Red for destructive actions */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 210 20% 88%; /* Light Gray Blue */
-    --input: 210 20% 88%; /* Light Gray Blue */
-    --ring: 220 70% 40%; /* Vibrant Dark Blue Ring */
+    --border: 260 20% 88%; /* Light Lavender Border */
+    --input: 260 20% 88%; /* Light Lavender Input */
+    --ring: 211 100% 45%; /* Professional Blue Ring */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 210 40% 98%; /* Off-white sidebar */
-    --sidebar-foreground: 220 30% 20%;
-    --sidebar-primary: 220 70% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 92%;
-    --sidebar-accent-foreground: 220 30% 20%;
-    --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 220 70% 40%;
+    --sidebar-background: 260 25% 92%; /* Slightly Darker Lavender Sidebar */
+    --sidebar-foreground: 219 33% 17%; /* Dark Blue Gray */
+    --sidebar-primary: 211 100% 45%; /* Professional Blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 201 38% 85%; /* Sky Blue */
+    --sidebar-accent-foreground: 219 33% 17%; /* Dark Blue Gray */
+    --sidebar-border: 260 20% 88%; /* Light Lavender Border */
+    --sidebar-ring: 211 100% 45%; /* Professional Blue Ring */
   }
 
   .dark {
-    /* Dark Theme: Deep Navy and Bright Blue */
-    --background: 222 28% 12%; /* Deep Navy */
-    --foreground: 210 20% 98%; /* Very Light Blue */
+    /* Dark Theme with Deep Purple */
+    --background: 260 20% 15%; /* Deep Purple */
+    --foreground: 300 20% 90%; /* Light Lavender */
 
-    --card: 222 28% 16%; /* Darker Navy */
-    --card-foreground: 210 20% 98%;
+    --card: 260 20% 20%; /* Darker Purple */
+    --card-foreground: 300 20% 90%; /* Light Lavender */
 
-    --popover: 222 28% 16%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 260 20% 20%; /* Darker Purple */
+    --popover-foreground: 300 20% 90%; /* Light Lavender */
 
-    --primary: 220 70% 60%; /* Bright Dark Blue */
-    --primary-foreground: 0 0% 100%;
+    --primary: 211 100% 65%; /* Bright Professional Blue */
+    --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 210 20% 30%; /* Medium Dark Blue */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 197 71% 53%; /* Medium Blue */
+    --secondary-foreground: 0 0% 100%; /* White */
 
-    --muted: 222 28% 20%;
-    --muted-foreground: 215 16% 65%;
+    --muted: 260 20% 25%; /* Muted Purple */
+    --muted-foreground: 300 20% 75%; /* Medium Lavender */
 
-    --accent: 222 28% 25%; /* Darker Navy Accent */
-    --accent-foreground: 210 20% 98%;
+    --accent: 201 38% 45%; /* Dark Sky Blue */
+    --accent-foreground: 0 0% 100%; /* White */
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 222 28% 25%;
-    --input: 222 28% 25%;
-    --ring: 220 70% 60%;
+    --border: 260 20% 30%; /* Purple Border */
+    --input: 260 20% 30%; /* Purple Input */
+    --ring: 211 100% 65%; /* Bright Professional Blue Ring */
 
-    --sidebar-background: 222 28% 10%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 220 70% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 28% 25%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 222 28% 25%;
-    --sidebar-ring: 220 70% 60%;
+    --sidebar-background: 260 20% 12%; /* Deeper Purple */
+    --sidebar-foreground: 300 20% 90%; /* Light Lavender */
+    --sidebar-primary: 211 100% 65%; /* Bright Professional Blue */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 201 38% 45%; /* Dark Sky Blue */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
+    --sidebar-border: 260 20% 30%; /* Purple Border */
+    --sidebar-ring: 211 100% 65%; /* Bright Professional Blue Ring */
   }
 }
 
@@ -92,7 +92,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(260, 25%, 95%) 0%, hsl(260, 25%, 90%) 100%);
+    color: hsl(var(--foreground));
   }
 }
 

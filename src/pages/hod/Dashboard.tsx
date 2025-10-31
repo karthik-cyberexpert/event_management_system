@@ -85,13 +85,13 @@ const HodDashboard = () => {
       <CardContent className="p-0">
         <Table>
           <TableHeader>
-            <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <TableHead className="text-primary-foreground">Title</TableHead>
-              <TableHead className="text-primary-foreground">Submitted By</TableHead>
-              <TableHead className="text-primary-foreground">Venue</TableHead>
-              <TableHead className="text-primary-foreground">Date</TableHead>
-              <TableHead className="text-primary-foreground">Status</TableHead>
-              <TableHead className="text-primary-foreground text-right">Actions</TableHead>
+            <TableRow className="bg-background border-b">
+              <TableHead className="text-primary">Title</TableHead>
+              <TableHead className="text-primary">Submitted By</TableHead>
+              <TableHead className="text-primary">Venue</TableHead>
+              <TableHead className="text-primary">Date</TableHead>
+              <TableHead className="text-primary">Status</TableHead>
+              <TableHead className="text-primary text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,28 +104,33 @@ const HodDashboard = () => {
                 <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
               </TableRow>
             ) : (
-              eventsList.map((event) => (
-                <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                  <TableCell className="font-medium">{event.title}</TableCell>
-                  <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
-                  <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
-                  <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
-                      {event.status.replace(/_/g, ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant={isReviewable(event) ? 'outline' : 'ghost'} 
-                      size="sm" 
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      {isReviewable(event) ? 'Review' : 'View'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              eventsList.map((event: any) => {
+                const isPending = isReviewable(event);
+                return (
+                  <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
+                    <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
+                    <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                    <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
+                      {event.venues?.name || event.other_venue_details || 'N/A'}
+                    </TableCell>
+                    <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-white capitalize`}>
+                        {event.status.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant={isReviewable(event) ? 'outline' : 'ghost'} 
+                        size="sm" 
+                        onClick={() => setSelectedEvent(event)}
+                      >
+                        {isReviewable(event) ? 'Review' : 'View'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
