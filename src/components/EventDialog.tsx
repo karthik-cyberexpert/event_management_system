@@ -126,7 +126,7 @@ const formSchema = z.object({
   end_time: z.string().min(1, 'End time is required'),
   
   // New field for poster URL (stored in DB)
-  poster_url: z.string().min(1, 'Event poster is mandatory.').optional(), 
+  poster_url: z.string().optional(), 
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -368,11 +368,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     let finalPosterUrl = values.poster_url;
 
     try {
-      // 1. Handle Poster Upload if a new file is selected
+      // 1. Handle Poster Upload and Mandatory Check
       if (posterFile) {
+        // If a new file is selected, upload it
         finalPosterUrl = await uploadPoster(posterFile);
       } else if (!finalPosterUrl) {
-        // Mandatory check for poster
+        // If no new file is selected AND no existing URL exists, it's mandatory.
         form.setError('poster_url', { type: 'manual', message: 'Event poster is mandatory.' });
         setIsSubmitting(false);
         return;
