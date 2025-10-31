@@ -105,7 +105,7 @@ const HodDashboard = () => {
               </TableRow>
             ) : (
               eventsList.map((event) => (
-                <TableRow key={event.id} className="odd:bg-muted/50">
+                <TableRow key={event.id}>
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                   <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>

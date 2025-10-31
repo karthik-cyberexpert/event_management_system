@@ -215,7 +215,7 @@ const CoordinatorDashboard = () => {
                   </TableRow>
                 ) : (
                   myEvents.map((event) => (
-                    <TableRow key={event.id} className="odd:bg-muted/50">
+                    <TableRow key={event.id}>
                       <TableCell className="font-medium">{event.title}</TableCell>
                       <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
                       <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
