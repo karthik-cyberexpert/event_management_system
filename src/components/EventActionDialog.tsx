@@ -24,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
+import { Image } from 'lucide-react';
+import PosterDialog from './PosterDialog'; // New Import
 
 const formSchema = z.object({
   remarks: z.string().optional(),
@@ -74,6 +76,7 @@ const formatTime12Hour = (time24: string | null | undefined): string => {
 
 const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: EventActionDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false);
   const actions = roleActions[role];
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -149,100 +152,124 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Review Event: {event.title}</DialogTitle>
-          <DialogDescription>
-            Submitted by: {event.profiles?.first_name} {event.profiles?.last_name}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4 text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            <div><strong>Department/Club:</strong> {event.department_club || 'N/A'}</div>
-            <div><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{event.mode_of_event || 'N/A'}</Badge></div>
-            <div className="col-span-2">
-              <strong>Coordinators:</strong>
-              {renderCoordinators()}
-            </div>
-            <div><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</div>
-            <div><strong>Time:</strong> {formatTime12Hour(event.start_time)} - {formatTime12Hour(event.end_time)}</div>
-            <div><strong>Venue:</strong> {event.venues?.name || 'N/A'}</div>
-            <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
-          </div>
-
-          <div><strong>Description:</strong> {event.description || 'N/A'}</div>
-          <div><strong>Objective:</strong> {event.objective || 'N/A'}</div>
-          <div><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</div>
-          <div><strong>Category:</strong> {formatArray(event.category)}</div>
-          <div><strong>Target Audience:</strong> {formatArray(event.target_audience)}</div>
-          <div><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</div>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Review Event: {event.title}</DialogTitle>
+            <DialogDescription>
+              Submitted by: {event.profiles?.first_name} {event.profiles?.last_name}
+            </DialogDescription>
+          </DialogHeader>
           
-          <div className="grid grid-cols-2 gap-4 border-t pt-4">
-            <div className="col-span-2">
-              <strong>Speakers/Resource Persons:</strong>
-              {renderSpeakers()}
+          {event.poster_url && (
+            <div className="flex justify-end">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsPosterDialogOpen(true)}
+              >
+                <Image className="h-4 w-4 mr-2" /> View Poster
+              </Button>
             </div>
-            <div><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</div>
-            <div><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</div>
-            <div className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</div>
+          )}
+
+          <div className="space-y-4 py-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div><strong>Department/Club:</strong> {event.department_club || 'N/A'}</div>
+              <div><strong>Mode:</strong> <Badge variant="secondary" className="capitalize">{event.mode_of_event || 'N/A'}</Badge></div>
+              <div className="col-span-2">
+                <strong>Coordinators:</strong>
+                {renderCoordinators()}
+              </div>
+              <div><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</div>
+              <div><strong>Time:</strong> {formatTime12Hour(event.start_time)} - {formatTime12Hour(event.end_time)}</div>
+              <div><strong>Venue:</strong> {event.venues?.name || 'N/A'}</div>
+              <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
+            </div>
+
+            <div><strong>Description:</strong> {event.description || 'N/A'}</div>
+            <div><strong>Objective:</strong> {event.objective || 'N/A'}</div>
+            <div><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</div>
+            <div><strong>Category:</strong> {formatArray(event.category)}</div>
+            <div><strong>Target Audience:</strong> {formatArray(event.target_audience)}</div>
+            <div><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</div>
+            
+            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+              <div className="col-span-2">
+                <strong>Speakers/Resource Persons:</strong>
+                {renderSpeakers()}
+              </div>
+              <div><strong>Budget Estimate:</strong> ₹{event.budget_estimate?.toFixed(2) || '0.00'}</div>
+              <div><strong>Funding Source:</strong> {event.budget_estimate > 0 ? formatArray(event.funding_source) : 'N/A (No budget)'}</div>
+              <div className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</div>
+            </div>
+
+            <div className="border-t pt-4 space-y-2">
+              <div><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</div>
+              <div><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
+              <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>
+            </div>
           </div>
 
-          <div className="border-t pt-4 space-y-2">
-            <div><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</div>
-            <div><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
-            <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>
-          </div>
-        </div>
+          <Form {...form}>
+            <form className="space-y-4">
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Add remarks (required for rejection/return)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
 
-        <Form {...form}>
-          <form className="space-y-4">
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remarks</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add remarks (required for rejection/return)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+          <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
+            <div className="flex gap-2">
+              {role === 'principal' && (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleAction('reject')}
+                  disabled={isSubmitting}
+                >
+                  {actions.reject.label}
+                </Button>
               )}
-            />
-          </form>
-        </Form>
-
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
-          <div className="flex gap-2">
-            {role === 'principal' && (
               <Button
-                variant="destructive"
-                onClick={() => handleAction('reject')}
+                variant="outline"
+                onClick={() => handleAction('return')}
                 disabled={isSubmitting}
               >
-                {actions.reject.label}
+                {actions.return.label}
               </Button>
-            )}
+            </div>
             <Button
-              variant="outline"
-              onClick={() => handleAction('return')}
+              onClick={() => handleAction('approve')}
               disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {actions.return.label}
+              {isSubmitting ? 'Submitting...' : actions.approve.label}
             </Button>
-          </div>
-          <Button
-            onClick={() => handleAction('approve')}
-            disabled={isSubmitting}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {isSubmitting ? 'Submitting...' : actions.approve.label}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {event.poster_url && (
+        <PosterDialog
+          isOpen={isPosterDialogOpen}
+          onClose={() => setIsPosterDialogOpen(false)}
+          posterUrl={event.poster_url}
+          eventTitle={event.title}
+        />
+      )}
+    </>
   );
 };
 

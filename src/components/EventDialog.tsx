@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,11 +34,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Plus, Trash2, MessageSquare } from 'lucide-react';
+import { Terminal, Plus, Trash2, MessageSquare, UploadCloud, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import TimePicker from './TimePicker';
-import ReturnReasonDialog from './ReturnReasonDialog'; // New Import
+import ReturnReasonDialog from './ReturnReasonDialog';
+import { useDropzone } from 'react-dropzone';
+import PosterDialog from './PosterDialog'; // New Import
 
 // --- Constants for Checkbox Groups ---
 
@@ -122,6 +124,9 @@ const formSchema = z.object({
   end_date: z.string().optional().nullable(),
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
+  
+  // New field for poster URL (stored in DB)
+  poster_url: z.string().min(1, 'Event poster is mandatory.').optional(), 
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -175,7 +180,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false); // New state for reasons dialog
+  const [isReasonDialogOpen, setIsReasonDialogOpen] = useState(false);
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false);
   
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
@@ -211,6 +218,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       end_time: '',
       coordinators: [{ name: '', contact: '' }],
       speakers_list: [{ name: '', details: '', contact: '' }],
+      poster_url: '', // Initialize poster URL
     },
   });
 
@@ -227,6 +235,38 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const budgetEstimate = form.watch('budget_estimate');
   const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
   const selectedVenueId = form.watch('venue_id');
+  const currentPosterUrl = form.watch('poster_url');
+
+  // --- Dropzone Setup ---
+  const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+    if (fileRejections.length > 0) {
+      const rejection = fileRejections[0];
+      if (rejection.errors.some((e: any) => e.code === 'file-too-large')) {
+        toast.error('File size exceeds 1MB limit.');
+      } else if (rejection.errors.some((e: any) => e.code === 'file-invalid-type')) {
+        toast.error('Only JPEG files are supported.');
+      } else {
+        toast.error('File upload rejected.');
+      }
+      setPosterFile(null);
+      return;
+    }
+    if (acceptedFiles.length > 0) {
+      setPosterFile(acceptedFiles[0]);
+      form.clearErrors('poster_url');
+    }
+  }, [form]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/jpeg': ['.jpeg', '.jpg'],
+    },
+    maxFiles: 1,
+    maxSize: 1024 * 1024, // 1MB
+    disabled: isReadOnly,
+  });
+  // --- End Dropzone Setup ---
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -275,7 +315,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '', contact: '' }],
         venue_id: isOtherVenue ? 'other' : event.venue_id,
         other_venue_details: event.other_venue_details || '',
+        poster_url: event.poster_url || '', // Set existing poster URL
       });
+      setPosterFile(null); // Clear file input state on edit load
     } else {
       const defaultDeptClub = profile?.department || profile?.club || profile?.professional_society || '';
       form.reset({
@@ -289,106 +331,150 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         promotion_strategy: [],
         expected_audience: undefined,
         budget_estimate: undefined,
+        poster_url: '',
       });
+      setPosterFile(null);
     }
   }, [event, form, profile]);
+
+  const uploadPoster = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const filePath = `${user!.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('event_posters')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Poster upload failed: ${uploadError.message}`);
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('event_posters')
+      .getPublicUrl(filePath);
+      
+    return publicUrl;
+  };
 
   const onSubmit = async (values: FormSchema) => {
     if (!user) return;
     setIsSubmitting(true);
 
-    const transformArrayField = (base: string[], other: string | undefined) => {
-      const result = [...base];
-      if (other?.trim()) result.push(other.trim());
-      return result;
-    };
+    let finalPosterUrl = values.poster_url;
 
-    const finalCategory = transformArrayField(values.category, values.category_others);
-    const finalAudience = transformArrayField(values.target_audience, values.target_audience_others);
-    const finalFunding = transformArrayField(values.funding_source || [], values.funding_source_others);
-    const finalPromotion = transformArrayField(values.promotion_strategy, values.promotion_strategy_others);
-    const coordinatorNames = values.coordinators.map(c => c.name);
-    const coordinatorContacts = values.coordinators.map(c => c.contact);
-    const speakerNames = values.speakers_list?.map(s => s.name) || [];
-    const speakerDetails = values.speakers_list?.map(s => s.details) || [];
-    const speakerContacts = values.speakers_list?.map(s => s.contact) || [];
-
-    const eventData = {
-      title: values.title,
-      description: values.description,
-      event_date: values.event_date,
-      end_date: values.end_date || null,
-      start_time: values.start_time,
-      end_time: values.end_time,
-      expected_audience: values.expected_audience,
-      department_club: values.department_club,
-      coordinator_name: coordinatorNames,
-      coordinator_contact: coordinatorContacts,
-      mode_of_event: values.mode_of_event,
-      category: finalCategory,
-      objective: values.objective,
-      sdg_alignment: values.sdg_alignment,
-      target_audience: finalAudience,
-      proposed_outcomes: values.proposed_outcomes,
-      speakers: speakerNames,
-      speaker_details: speakerDetails,
-      speaker_contacts: speakerContacts,
-      budget_estimate: values.budget_estimate || 0,
-      funding_source: finalFunding,
-      promotion_strategy: finalPromotion,
-      hod_approval_at: null,
-      dean_approval_at: null,
-      principal_approval_at: null,
-      venue_id: values.venue_id === 'other' ? null : values.venue_id,
-      other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
-    };
-
-    const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
-      p_venue_id: values.venue_id === 'other' ? null : values.venue_id,
-      p_start_date: values.event_date,
-      p_end_date: values.end_date || values.event_date,
-      p_start_time: values.start_time,
-      p_end_time: values.end_time,
-      p_event_id: isEditMode ? event.id : null,
-    });
-
-    if (checkError || (values.venue_id !== 'other' && !isAvailable)) {
-      toast.error('Venue is not available at the selected date and time.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    let error;
-    if (isEditMode) {
-      // Determine the new status based on the previous status
-      let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
-      if (event.status === 'returned_to_coordinator') {
-        newStatus = 'resubmitted';
+    try {
+      // 1. Handle Poster Upload if a new file is selected
+      if (posterFile) {
+        finalPosterUrl = await uploadPoster(posterFile);
+      } else if (!finalPosterUrl) {
+        // Mandatory check for poster
+        form.setError('poster_url', { type: 'manual', message: 'Event poster is mandatory.' });
+        setIsSubmitting(false);
+        return;
       }
-      
-      // When resubmitting, reset remarks and approval timestamps
-      const { error: updateError } = await supabase.from('events').update({ 
-        ...eventData, 
-        status: newStatus, 
-        remarks: null,
+
+      const transformArrayField = (base: string[], other: string | undefined) => {
+        const result = [...base];
+        if (other?.trim()) result.push(other.trim());
+        return result;
+      };
+
+      const finalCategory = transformArrayField(values.category, values.category_others);
+      const finalAudience = transformArrayField(values.target_audience, values.target_audience_others);
+      const finalFunding = transformArrayField(values.funding_source || [], values.funding_source_others);
+      const finalPromotion = transformArrayField(values.promotion_strategy, values.promotion_strategy_others);
+      const coordinatorNames = values.coordinators.map(c => c.name);
+      const coordinatorContacts = values.coordinators.map(c => c.contact);
+      const speakerNames = values.speakers_list?.map(s => s.name) || [];
+      const speakerDetails = values.speakers_list?.map(s => s.details) || [];
+      const speakerContacts = values.speakers_list?.map(s => s.contact) || [];
+
+      const eventData = {
+        title: values.title,
+        description: values.description,
+        event_date: values.event_date,
+        end_date: values.end_date || null,
+        start_time: values.start_time,
+        end_time: values.end_time,
+        expected_audience: values.expected_audience,
+        department_club: values.department_club,
+        coordinator_name: coordinatorNames,
+        coordinator_contact: coordinatorContacts,
+        mode_of_event: values.mode_of_event,
+        category: finalCategory,
+        objective: values.objective,
+        sdg_alignment: values.sdg_alignment,
+        target_audience: finalAudience,
+        proposed_outcomes: values.proposed_outcomes,
+        speakers: speakerNames,
+        speaker_details: speakerDetails,
+        speaker_contacts: speakerContacts,
+        budget_estimate: values.budget_estimate || 0,
+        funding_source: finalFunding,
+        promotion_strategy: finalPromotion,
         hod_approval_at: null,
         dean_approval_at: null,
         principal_approval_at: null,
-      }).eq('id', event.id);
-      error = updateError;
-    } else {
-      const { error: insertError } = await supabase.from('events').insert({ ...eventData, submitted_by: user.id });
-      error = insertError;
-    }
+        venue_id: values.venue_id === 'other' ? null : values.venue_id,
+        other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
+        poster_url: finalPosterUrl, // Save the URL
+      };
 
-    if (error) {
-      toast.error(`Failed to save event: ${error.message}`);
-    } else {
-      toast.success(`Event ${isEditMode ? 'updated and resubmitted' : 'created'} successfully.`);
-      onSuccess();
-      onClose();
+      // 2. Check Venue Availability
+      const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
+        p_venue_id: values.venue_id === 'other' ? null : values.venue_id,
+        p_start_date: values.event_date,
+        p_end_date: values.end_date || values.event_date,
+        p_start_time: values.start_time,
+        p_end_time: values.end_time,
+        p_event_id: isEditMode ? event.id : null,
+      });
+
+      if (checkError || (values.venue_id !== 'other' && !isAvailable)) {
+        toast.error('Venue is not available at the selected date and time.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 3. Insert/Update Event
+      let error;
+      if (isEditMode) {
+        let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
+        if (event.status === 'returned_to_coordinator') {
+          newStatus = 'resubmitted';
+        }
+        
+        const { error: updateError } = await supabase.from('events').update({ 
+          ...eventData, 
+          status: newStatus, 
+          remarks: null,
+          hod_approval_at: null,
+          dean_approval_at: null,
+          principal_approval_at: null,
+        }).eq('id', event.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase.from('events').insert({ ...eventData, submitted_by: user.id });
+        error = insertError;
+      }
+
+      if (error) {
+        toast.error(`Failed to save event: ${error.message}`);
+      } else {
+        toast.success(`Event ${isEditMode ? 'updated and resubmitted' : 'created'} successfully.`);
+        onSuccess();
+        onClose();
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const getDialogTitle = () => {
@@ -596,6 +682,58 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                   <h3 className="text-lg font-semibold border-b pb-2">Event Promotion Strategy</h3>
                   <FormField control={form.control} name="promotion_strategy" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{PROMOTION_STRATEGIES.map((item) => (<FormField key={item} control={form.control} name="promotion_strategy" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('promotion_strategy').includes('others') && (<FormField control={form.control} name="promotion_strategy_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Promotion Strategy</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
                 </div>
+                
+                {/* --- Poster Upload Section --- */}
+                <div className="space-y-4 md:col-span-2 pt-4 border-t">
+                  <h3 className="text-lg font-semibold border-b pb-2">Event Poster (Mandatory JPEG, Max 1MB)</h3>
+                  
+                  {isReadOnly ? (
+                    <div className="flex items-center justify-between p-3 border rounded-md bg-muted">
+                      <p className="text-sm">{currentPosterUrl ? 'Poster uploaded.' : 'No poster uploaded.'}</p>
+                      {currentPosterUrl && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setIsPosterDialogOpen(true)}>
+                          <Image className="h-4 w-4 mr-2" /> View Poster
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="poster_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div
+                              {...getRootProps()}
+                              className={cn(
+                                'p-8 border-2 border-dashed rounded-md text-center cursor-pointer transition-colors',
+                                isDragActive ? 'border-primary bg-primary/10' : 'border-border',
+                                form.formState.errors.poster_url && 'border-destructive'
+                              )}
+                            >
+                              <input {...getInputProps()} />
+                              <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                              {posterFile ? (
+                                <p className="text-sm font-medium">{posterFile.name}</p>
+                              ) : currentPosterUrl ? (
+                                <p className="text-sm text-green-600">Existing poster uploaded. Click to replace.</p>
+                              ) : (
+                                <p>Drag 'n' drop JPEG poster here, or click to select file (Max 1MB)</p>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormMessage>{form.formState.errors.poster_url?.message}</FormMessage>
+                          {currentPosterUrl && !posterFile && (
+                            <Button type="button" variant="link" size="sm" onClick={() => setIsPosterDialogOpen(true)} className="p-0 h-auto">
+                              View Current Poster
+                            </Button>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+                {/* --- End Poster Upload Section --- */}
               </div>
 
               {(isEditMode || isReadOnly) && event && (
@@ -634,11 +772,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         </DialogContent>
       </Dialog>
       
-      {event && (
-        <ReturnReasonDialog
-          event={event}
-          isOpen={isReasonDialogOpen}
-          onClose={() => setIsReasonDialogOpen(false)}
+      {event && currentPosterUrl && (
+        <PosterDialog
+          isOpen={isPosterDialogOpen}
+          onClose={() => setIsPosterDialogOpen(false)}
+          posterUrl={currentPosterUrl}
+          eventTitle={event.title}
         />
       )}
     </>
