@@ -360,8 +360,21 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
     let error;
     if (isEditMode) {
-      // When resubmitting, reset remarks and status to pending_hod
-      const { error: updateError } = await supabase.from('events').update({ ...eventData, status: 'pending_hod', remarks: null }).eq('id', event.id);
+      // Determine the new status based on the previous status
+      let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
+      if (event.status === 'returned_to_coordinator') {
+        newStatus = 'resubmitted';
+      }
+      
+      // When resubmitting, reset remarks and approval timestamps
+      const { error: updateError } = await supabase.from('events').update({ 
+        ...eventData, 
+        status: newStatus, 
+        remarks: null,
+        hod_approval_at: null,
+        dean_approval_at: null,
+        principal_approval_at: null,
+      }).eq('id', event.id);
       error = updateError;
     } else {
       const { error: insertError } = await supabase.from('events').insert({ ...eventData, submitted_by: user.id });

@@ -27,13 +27,14 @@ import EventCalendar from '@/components/EventCalendar';
 
 const statusColors = {
   pending_hod: 'bg-primary',
+  resubmitted: 'bg-indigo-500', // New color for resubmitted
   returned_to_coordinator: 'bg-secondary',
   pending_dean: 'bg-accent',
   returned_to_hod: 'bg-muted',
   pending_principal: 'bg-primary/80',
   approved: 'bg-green-500',
   rejected: 'bg-destructive',
-  cancelled: 'bg-gray-500', // New color for cancelled
+  cancelled: 'bg-gray-500',
 };
 
 const CoordinatorDashboard = () => {
