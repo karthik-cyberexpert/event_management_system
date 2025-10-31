@@ -25,11 +25,11 @@ serve(async (req) => {
     const results = [];
 
     for (const userData of users) {
-      const { email, first_name, last_name, role, department, club, professional_society } = userData;
+      const { email, first_name, last_name, role, department, club, professional_society, password } = userData;
 
       // --- Validation ---
-      if (!email || !first_name || !last_name || !role) {
-        results.push({ email: email || 'N/A', success: false, error: 'Missing required fields (email, first_name, last_name, role).' });
+      if (!email || !first_name || !last_name || !role || !password) {
+        results.push({ email: email || 'N/A', success: false, error: 'Missing required fields (email, first_name, last_name, role, password).' });
         continue;
       }
 
@@ -48,19 +48,19 @@ serve(async (req) => {
       const profileClub = (role === 'coordinator') ? (club || null) : null;
       const profileSociety = (role === 'coordinator') ? (professional_society || null) : null;
 
-      const { error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+      const { error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        {
-          data: {
-            first_name,
-            last_name,
-            role,
-            department: profileDepartment,
-            club: profileClub,
-            professional_society: profileSociety,
-          },
-        }
-      );
+        password,
+        email_confirm: true, // Automatically confirm the email since admin is creating it
+        user_metadata: {
+          first_name,
+          last_name,
+          role,
+          department: profileDepartment,
+          club: profileClub,
+          professional_society: profileSociety,
+        },
+      });
 
       if (authError) {
         results.push({ email, success: false, error: authError.message });

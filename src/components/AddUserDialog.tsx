@@ -34,10 +34,15 @@ const formSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  confirmPassword: z.string(),
   role: z.enum(['admin', 'coordinator', 'hod', 'dean', 'principal']),
   department: z.string().optional(),
   club: z.string().optional(),
   professional_society: z.string().optional(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 }).superRefine((data, ctx) => {
   if (data.role === 'coordinator') {
     const isDepartmentSelected = data.department && data.department !== '--none--';
@@ -74,6 +79,8 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
       first_name: '',
       last_name: '',
       email: '',
+      password: '',
+      confirmPassword: '',
       department: '',
       club: '',
       professional_society: '',
@@ -105,6 +112,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
         professional_society: values.professional_society === '--none--' ? null : values.professional_society,
       };
 
+      // The Edge Function now handles user creation with a password
       const { data, error } = await supabase.functions.invoke('admin-create-users', {
         body: submissionValues,
       });
@@ -113,14 +121,14 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
 
       const result = data.results[0];
       if (result.success) {
-        toast.success(`Invitation sent to ${result.email}.`);
+        toast.success(`User ${result.email} created successfully.`);
         onSuccess();
         onClose();
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
-      toast.error(`Failed to invite user: ${error.message}`);
+      toast.error(`Failed to create user: ${error.message}`);
     }
   };
 
@@ -141,8 +149,8 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Invite New User</DialogTitle>
-          <DialogDescription>An invitation will be sent to the user's email to set their password.</DialogDescription>
+          <DialogTitle>Create New User</DialogTitle>
+          <DialogDescription>Set the user's details, role, and initial password.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -151,6 +159,12 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
               <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div>
+
             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl><SelectContent><SelectItem value="coordinator">Coordinator</SelectItem><SelectItem value="hod">HOD</SelectItem><SelectItem value="dean">Dean</SelectItem><SelectItem value="principal">Principal</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
             {showDepartmentField && (
@@ -166,7 +180,7 @@ const AddUserDialog = ({ isOpen, onClose, onSuccess }: AddUserDialogProps) => {
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Sending...' : 'Send Invitation'}
+                {form.formState.isSubmitting ? 'Creating User...' : 'Create User'}
               </Button>
             </DialogFooter>
           </form>
