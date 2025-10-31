@@ -33,7 +33,7 @@ const PrincipalDashboard = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Fetch all events visible to the Principal based on RLS.
+    // Fetch only events that are pending Principal action.
     const { data, error } = await supabase
       .from('events')
       .select(`
@@ -41,7 +41,8 @@ const PrincipalDashboard = () => {
         venues ( name ),
         submitted_by:profiles ( first_name, last_name )
       `)
-      .order('created_at', { ascending: false }); // Show most recent events first
+      .eq('status', 'pending_principal')
+      .order('created_at', { ascending: false });
 
     if (error) {
       toast.error('Error fetching events for dashboard.');
@@ -94,7 +95,7 @@ const PrincipalDashboard = () => {
                 </TableRow>
               ) : events.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">No relevant events found.</TableCell>
+                  <TableCell colSpan={6} className="text-center">No events are currently pending your approval.</TableCell>
                 </TableRow>
               ) : (
                 events.map((event) => (

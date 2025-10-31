@@ -33,8 +33,7 @@ const HodDashboard = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Fetch all events visible to the HOD based on RLS.
-    // This includes pending_hod, returned_to_hod, and all events submitted by coordinators in their department.
+    // Fetch only events that are pending HOD action.
     const { data, error } = await supabase
       .from('events')
       .select(`
@@ -42,13 +41,13 @@ const HodDashboard = () => {
         venues ( name ),
         submitted_by:profiles ( first_name, last_name )
       `)
-      .order('created_at', { ascending: false }); // Show most recent events first
+      .in('status', ['pending_hod', 'returned_to_hod'])
+      .order('created_at', { ascending: false });
 
     if (error) {
       toast.error('Error fetching events for dashboard.');
       console.error('Error fetching events:', error);
     } else {
-      // Map the data to use 'profiles' for consistency in rendering
       const mappedData = data.map(event => ({
         ...event,
         profiles: event.submitted_by,
@@ -74,7 +73,7 @@ const HodDashboard = () => {
 
   return (
     <div>
-      <h2 className="text-3xl font-bold mb-6">Department Events Overview</h2>
+      <h2 className="text-3xl font-bold mb-6">Events Pending Approval</h2>
       
       <div className="bg-white rounded-lg shadow">
         <Table>
@@ -95,7 +94,7 @@ const HodDashboard = () => {
               </TableRow>
             ) : events.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No relevant events found.</TableCell>
+                <TableCell colSpan={6} className="text-center">No events are currently pending your approval.</TableCell>
               </TableRow>
             ) : (
               events.map((event) => (
