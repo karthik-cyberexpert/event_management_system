@@ -4,45 +4,45 @@
 
 @layer base {
   :root {
-    /* Light Blue Theme */
-    --background: 0 0% 100%; /* White */
+    /* Teal and Coral Theme */
+    --background: 180 20% 97%; /* Light Teal */
     --foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --card: 0 0% 100%; /* White */
+    --card: 180 20% 99%; /* Very Light Teal */
     --card-foreground: 219 33% 17%; /* Dark Blue Gray */
 
     --popover: 0 0% 100%; /* White */
     --popover-foreground: 219 33% 17%; /* Dark Blue Gray */
 
-    --primary: 211 100% 45%; /* Ocean Blue */
+    --primary: 170 60% 40%; /* Teal */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 197 71% 73%; /* Light Blue */
-    --secondary-foreground: 219 33% 17%; /* Dark Blue Gray */
+    --secondary: 15 80% 60%; /* Coral */
+    --secondary-foreground: 0 0% 100%; /* White */
 
-    --muted: 210 20% 96%; /* Very Light Blue */
+    --muted: 180 25% 92%; /* Medium Teal Muted */
     --muted-foreground: 215 16% 47%; /* Muted Blue Gray */
 
-    --accent: 201 38% 85%; /* Sky Blue */
+    --accent: 170 40% 85%; /* Light Teal */
     --accent-foreground: 219 33% 17%; /* Dark Blue Gray */
 
     --destructive: 0 84% 60%; /* Red for destructive actions */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 210 20% 90%; /* Light Blue Gray Border */
-    --input: 210 20% 90%; /* Light Blue Gray Input */
-    --ring: 211 100% 45%; /* Ocean Blue Ring */
+    --border: 180 20% 88%; /* Teal Border */
+    --input: 180 20% 88%; /* Teal Input */
+    --ring: 170 60% 40%; /* Teal Ring */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 211 100% 97%; /* Very Light Ocean Blue */
+    --sidebar-background: 180 25% 95%; /* Medium Teal */
     --sidebar-foreground: 219 33% 17%; /* Dark Blue Gray */
-    --sidebar-primary: 211 100% 45%; /* Ocean Blue */
+    --sidebar-primary: 170 60% 40%; /* Teal */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 201 38% 85%; /* Sky Blue */
+    --sidebar-accent: 15 80% 90%; /* Light Coral */
     --sidebar-accent-foreground: 219 33% 17%; /* Dark Blue Gray */
-    --sidebar-border: 210 20% 90%; /* Light Blue Gray Border */
-    --sidebar-ring: 211 100% 45%; /* Ocean Blue Ring */
+    --sidebar-border: 180 20% 88%; /* Teal Border */
+    --sidebar-ring: 170 60% 40%; /* Teal Ring */
   }
 
   .dark {

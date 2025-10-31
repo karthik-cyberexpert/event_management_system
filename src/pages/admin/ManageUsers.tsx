@@ -120,7 +120,7 @@ const ManageUsers = () => {
         {ALL_ROLES.map(role => (
           <TabsContent key={role} value={role} className="mt-4">
             {role === 'coordinator' && (
-              <div className="flex items-center gap-4 mb-4 bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center gap-4 mb-4 bg-card p-4 rounded-lg shadow">
                 <Label className="font-semibold">Coordinator Type:</Label>
                 <RadioGroup value={coordinatorFilter} onValueChange={(value: CoordinatorFilter) => setCoordinatorFilter(value)} className="flex space-x-4">
                   <div className="flex items-center space-x-2"><RadioGroupItem value="department" id="r1" /><Label htmlFor="r1">Department</Label></div>
@@ -130,7 +130,7 @@ const ManageUsers = () => {
               </div>
             )}
 
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-card rounded-lg shadow">
               <Table>
                 <TableHeader>
                   <TableRow>
