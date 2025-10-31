@@ -99,7 +99,7 @@ const DeanDashboard = () => {
               </TableRow>
             ) : (
               events.map((event) => (
-                <TableRow key={event.id}>
+                <TableRow key={event.id} className="odd:bg-muted/50">
                   <TableCell className="font-medium">{event.title}</TableCell>
                   <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                   <TableCell>{event.department_club || 'N/A'}</TableCell>
