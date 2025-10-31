@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -73,22 +73,26 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
     const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
     if (unreadIds.length === 0) return;
 
+    // Optimistic UI update
+    setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .in('id', unreadIds);
 
-    if (!error) {
-      setNotifications(notifications.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+    if (error) {
+      console.error('Failed to mark all as read:', error);
+      // Re-fetch on error to restore correct state
+      fetchNotifications();
     }
   };
 
   const handlePopoverOpenChange = (open: boolean) => {
     setIsPopoverOpen(open);
-    if (!open) {
-      handleMarkAllAsRead();
-    }
+    // We will rely on the explicit button click for marking all as read, 
+    // instead of closing the popover automatically marking them read.
   };
 
   const handleItemClick = (notification: Notification) => {
@@ -108,9 +112,19 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="p-4">
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="flex justify-between items-center p-4 border-b">
           <h4 className="font-medium leading-none">Notifications</h4>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleMarkAllAsRead}
+              className="text-xs h-6 px-2 text-primary hover:bg-primary/10"
+            >
+              <CheckCheck className="h-3 w-3 mr-1" /> Mark All Read
+            </Button>
+          )}
         </div>
         <ScrollArea className="h-72">
           {notifications.length === 0 ? (
@@ -137,6 +151,19 @@ const NotificationBell = ({ onNotificationClick }: NotificationBellProps) => {
             </div>
           )}
         </ScrollArea>
+        
+        {/* Footer with Mark All As Read button (as requested, placed at the bottom left) */}
+        <div className="p-2 border-t">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleMarkAllAsRead}
+            disabled={unreadCount === 0}
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+          >
+            <CheckCheck className="h-4 w-4" />
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
