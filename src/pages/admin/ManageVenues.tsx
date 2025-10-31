@@ -92,14 +92,14 @@ const ManageVenues = () => {
         venue={selectedVenue}
       />
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <TableHead className="text-primary-foreground">Name</TableHead>
+              <TableHead className="text-primary-foreground">Capacity</TableHead>
+              <TableHead className="text-primary-foreground">Location</TableHead>
+              <TableHead className="text-primary-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -113,7 +113,7 @@ const ManageVenues = () => {
               </TableRow>
             ) : (
               venues.map((venue) => (
-                <TableRow key={venue.id}>
+                <TableRow key={venue.id} className="bg-card hover:bg-accent transition-colors">
                   <TableCell className="font-medium">{venue.name}</TableCell>
                   <TableCell>{venue.capacity || 'N/A'}</TableCell>
                   <TableCell>{venue.location || 'N/A'}</TableCell>

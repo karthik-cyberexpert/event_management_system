@@ -131,15 +131,15 @@ const ManageDepartments = () => {
         department={selectedDepartment}
       />
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Degree</TableHead>
-              <TableHead>HOD</TableHead>
-              <TableHead>Coordinators</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <TableHead className="text-primary-foreground">Name</TableHead>
+              <TableHead className="text-primary-foreground">Degree</TableHead>
+              <TableHead className="text-primary-foreground">HOD</TableHead>
+              <TableHead className="text-primary-foreground">Coordinators</TableHead>
+              <TableHead className="text-primary-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -153,7 +153,7 @@ const ManageDepartments = () => {
               </TableRow>
             ) : (
               departments.map((department) => (
-                <TableRow key={department.id}>
+                <TableRow key={department.id} className="bg-card hover:bg-accent transition-colors">
                   <TableCell className="font-medium">{department.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{department.degree}</Badge>

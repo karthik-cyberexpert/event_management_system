@@ -133,21 +133,25 @@ const ManageUsers = () => {
             <div className="bg-card rounded-lg shadow">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email Address</TableHead>
-                    <TableHead>{getAssignmentHeader()}</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <TableHead className="text-primary-foreground">Name</TableHead>
+                    <TableHead className="text-primary-foreground">Email Address</TableHead>
+                    <TableHead className="text-primary-foreground">{getAssignmentHeader()}</TableHead>
+                    <TableHead className="text-primary-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    </TableRow>
                   ) : filteredUsers.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center">No {role}s found for this filter.</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">No {role}s found for this filter.</TableCell>
+                    </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow key={user.id} className="bg-card hover:bg-accent transition-colors">
                         <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getAssignmentValue(user)}</TableCell>

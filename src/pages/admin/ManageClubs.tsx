@@ -124,13 +124,13 @@ const ManageClubs = () => {
         club={selectedClub}
       />
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Coordinators</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <TableHead className="text-primary-foreground">Name</TableHead>
+              <TableHead className="text-primary-foreground">Coordinators</TableHead>
+              <TableHead className="text-primary-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,7 +144,7 @@ const ManageClubs = () => {
               </TableRow>
             ) : (
               clubs.map((club) => (
-                <TableRow key={club.id}>
+                <TableRow key={club.id} className="bg-card hover:bg-accent transition-colors">
                   <TableCell className="font-medium">{club.name}</TableCell>
                   <TableCell>
                     <DropdownMenu>
