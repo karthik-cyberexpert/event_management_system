@@ -19,6 +19,7 @@ import { List, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
+  resubmitted: 'bg-indigo-500', // Added resubmitted color
   returned_to_coordinator: 'bg-orange-500',
   pending_dean: 'bg-yellow-600',
   returned_to_hod: 'bg-orange-600',
@@ -70,7 +71,7 @@ const HodDashboard = () => {
   
   const isReviewable = (event: any) => {
     const status = event.status;
-    return status === 'pending_hod' || status === 'returned_to_hod';
+    return status === 'pending_hod' || status === 'returned_to_hod' || status === 'resubmitted';
   };
 
   const pendingEvents = allEvents.filter(e => isReviewable(e));
