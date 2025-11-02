@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle, Download } from 'lucide-react';
+import { PlusCircle, Edit, List, Calendar, MoreHorizontal, XCircle, Download, FileText } from 'lucide-react';
 import EventDialog from '@/components/EventDialog';
 import EventCancelDialog from '@/components/EventCancelDialog';
 import EventReportDialog from '@/components/EventReportDialog';
+import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog'; // New Import
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isPast } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCalendar from '@/components/EventCalendar';
 
@@ -44,7 +45,8 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); // New state
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); 
+  const [isReportGeneratorOpen, setIsReportGeneratorOpen] = useState(false); // New state
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
 
@@ -115,6 +117,11 @@ const CoordinatorDashboard = () => {
     setSelectedEvent(event);
     setIsReportDialogOpen(true);
   };
+  
+  const handleGenerate = (event: any) => {
+    setSelectedEvent(event);
+    setIsReportGeneratorOpen(true);
+  };
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
@@ -128,6 +135,11 @@ const CoordinatorDashboard = () => {
   
   const handleReportDialogClose = () => {
     setIsReportDialogOpen(false);
+    setSelectedEvent(null);
+  };
+  
+  const handleReportGeneratorClose = () => {
+    setIsReportGeneratorOpen(false);
     setSelectedEvent(null);
   };
 
@@ -146,6 +158,26 @@ const CoordinatorDashboard = () => {
   const isCancellable = (status: string) => {
     // Allow cancellation if not already rejected or cancelled
     return status !== 'rejected' && status !== 'cancelled';
+  };
+  
+  const isEventOver = (event: any) => {
+    if (event.status !== 'approved') return false;
+    
+    const endDate = event.end_date || event.event_date;
+    const endTime = event.end_time; // HH:mm format
+    
+    if (!endDate || !endTime) return false;
+
+    try {
+      const [h, m] = endTime.split(':').map(Number);
+      const eventEndDateTime = new Date(endDate);
+      eventEndDateTime.setHours(h, m, 0, 0);
+      
+      return isPast(eventEndDateTime);
+    } catch (e) {
+      console.error("Error parsing event time:", e);
+      return false;
+    }
   };
 
   return (
@@ -176,6 +208,11 @@ const CoordinatorDashboard = () => {
           <EventReportDialog
             isOpen={isReportDialogOpen}
             onClose={handleReportDialogClose}
+            event={selectedEvent}
+          />
+          <EventReportGeneratorDialog
+            isOpen={isReportGeneratorOpen}
+            onClose={handleReportGeneratorClose}
             event={selectedEvent}
           />
         </>
@@ -214,51 +251,59 @@ const CoordinatorDashboard = () => {
                     <TableCell colSpan={5} className="text-center">No events found.</TableCell>
                   </TableRow>
                 ) : (
-                  myEvents.map((event) => (
-                    <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
-                      <TableCell className="font-medium">{event.title}</TableCell>
-                      <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
-                      <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                      <TableCell>
-                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-primary-foreground`}>
-                          {event.status.replace(/_/g, ' ').toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleView(event)}>
-                              View
-                            </DropdownMenuItem>
-                            {event.status === 'returned_to_coordinator' && (
-                              <DropdownMenuItem onClick={() => handleEdit(event)}>
-                                Edit
+                  myEvents.map((event) => {
+                    const isOver = isEventOver(event);
+                    return (
+                      <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
+                        <TableCell className="font-medium">{event.title}</TableCell>
+                        <TableCell>{event.venues?.name || event.other_venue_details || 'N/A'}</TableCell>
+                        <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
+                        <TableCell>
+                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-primary-foreground`}>
+                            {event.status.replace(/_/g, ' ').toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(event)}>
+                                View
                               </DropdownMenuItem>
-                            )}
-                            {event.status === 'approved' && (
-                              <DropdownMenuItem onClick={() => handleReport(event)}>
-                                <Download className="mr-2 h-4 w-4" /> Download Report
-                              </DropdownMenuItem>
-                            )}
-                            {isCancellable(event.status) && (
-                              <DropdownMenuItem 
-                                onClick={() => handleCancel(event)}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <XCircle className="mr-2 h-4 w-4" /> Cancel Event
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                              {event.status === 'returned_to_coordinator' && (
+                                <DropdownMenuItem onClick={() => handleEdit(event)}>
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+                              {event.status === 'approved' && (
+                                <DropdownMenuItem onClick={() => handleReport(event)}>
+                                  <Download className="mr-2 h-4 w-4" /> Download Approval Report
+                                </DropdownMenuItem>
+                              )}
+                              {event.status === 'approved' && isOver && (
+                                <DropdownMenuItem onClick={() => handleGenerate(event)}>
+                                  <FileText className="mr-2 h-4 w-4" /> Make Final Report
+                                </DropdownMenuItem>
+                              )}
+                              {isCancellable(event.status) && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleCancel(event)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" /> Cancel Event
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
