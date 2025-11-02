@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, FileDown, Loader2, Image, Users } from 'lucide-react';
+import { Download, UploadCloud, FileDown, Loader2, Image, Users, FileText } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { saveAs } from 'file-saver';
 
 const MAX_PHOTO_SIZE = 1024 * 1024; // 1MB
 
@@ -115,7 +116,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           const data = new Uint8Array(event.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
-          const json: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+          const worksheet = workbook.Sheets[sheetName];
+          // Use header: 1 to get array of arrays, then map to objects to ensure consistent keys
+          const json: any[] = XLSX.utils.sheet_to_json(worksheet);
           
           if (json.length === 0) {
             toast.error('Registered users file is empty.');
@@ -141,7 +144,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
   const handleDownloadTemplate = () => {
     const worksheet = XLSX.utils.json_to_sheet([
-      { name: 'Participant 1', email: 'p1@example.com', department: 'CSE' },
+      { Name: 'Participant 1', Email: 'p1@example.com', Department: 'CSE' },
     ]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Users');
@@ -218,11 +221,20 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     toast.loading('Generating PDF...', { id: 'pdf-gen' });
 
     try {
+      // Temporarily hide the DOCX button for PDF capture
+      const docxButton = document.getElementById('docx-download-button');
+      if (docxButton) docxButton.style.display = 'none';
+
       const canvas = await html2canvas(reportRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
+        windowWidth: reportRef.current.scrollWidth,
+        windowHeight: reportRef.current.scrollHeight,
       });
+
+      // Restore DOCX button
+      if (docxButton) docxButton.style.display = 'inline-flex';
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -230,7 +242,20 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Check if content spans multiple pages
+      let heightLeft = pdfHeight;
+      let position = 0;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
       
       const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.pdf`;
       pdf.save(filename);
@@ -240,6 +265,49 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       console.error('PDF generation failed:', error);
       toast.error('Failed to generate PDF.', { id: 'pdf-gen' });
     }
+  };
+  
+  // --- DOCX Generation ---
+  const handleDownloadDocx = () => {
+    if (!reportData || !reportRef.current) return;
+
+    const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.doc`;
+    
+    // Get the inner HTML content of the report area
+    const content = reportRef.current.innerHTML;
+
+    // Basic HTML structure for DOCX conversion (using mso-number-format for better compatibility)
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1, h2, h3 { color: #1f4e79; }
+          .report-container { max-width: 800px; margin: 0 auto; }
+          .table-container { margin-top: 20px; border: 1px solid #ccc; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10pt; }
+          th { background-color: #f2f2f2; }
+          .photo-container img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
+          .ai-report { white-space: pre-wrap; }
+        </style>
+      </head>
+      <body>
+        <div class="report-container">
+          ${content}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([htmlContent], {
+      type: 'application/msword;charset=utf-8',
+    });
+
+    saveAs(blob, filename);
+    toast.success('DOCX file downloaded successfully!');
   };
 
   // --- Render Helpers ---
@@ -258,47 +326,43 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         {/* AI Generated Report */}
         <div className="mb-6 p-4 border rounded-md bg-gray-50 whitespace-pre-wrap">
           <h3 className="text-base font-bold mb-2">AI Generated Narrative Report</h3>
-          <p className="text-sm">{reportData.aiReport}</p>
+          <div className="ai-report text-sm">{reportData.aiReport}</div>
         </div>
 
         {/* Event Photo */}
         {reportData.photoUrl && (
-          <div className="mb-6">
+          <div className="mb-6 photo-container">
             <h3 className="text-base font-bold mb-2">Event Photo</h3>
-            <img src={reportData.photoUrl} alt="Event Photo" className="w-full h-auto object-cover rounded-md shadow-md" />
+            <img 
+              src={reportData.photoUrl} 
+              alt="Event Photo" 
+              className="w-full h-auto object-contain rounded-md shadow-md"
+              style={{ maxWidth: '400px', maxHeight: '300px', margin: '0 auto' }} // Fixed size for PDF/DOCX
+            />
           </div>
         )}
 
-        {/* Registered Users Summary */}
-        <div className="mb-6 p-4 border rounded-md">
-          <h3 className="text-base font-bold mb-2">Registered Users ({reportData.registeredUsers.length})</h3>
-          <div className="max-h-40 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
+        {/* Registered Users Summary - Displaying all users without scroll */}
+        <div className="mb-6 table-container">
+          <h3 className="text-base font-bold mb-2 p-2">Registered Users ({reportData.registeredUsers.length})</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Department</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reportData.registeredUsers.map((user, index) => (
+                <TableRow key={index}>
+                  <TableCell>{user.name || user.Name || 'N/A'}</TableCell>
+                  <TableCell>{user.email || user.Email || 'N/A'}</TableCell>
+                  <TableCell>{user.department || user.Department || 'N/A'}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reportData.registeredUsers.slice(0, 10).map((user, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{user.name || user.Name || 'N/A'}</TableCell>
-                    <TableCell>{user.email || user.Email || 'N/A'}</TableCell>
-                    <TableCell>{user.department || user.Department || 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
-                {reportData.registeredUsers.length > 10 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
-                      ... and {reportData.registeredUsers.length - 10} more participants.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     );
@@ -386,7 +450,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                 <div className="text-center p-10 space-y-4">
                   <h3 className="text-xl font-semibold">Ready to Generate Report</h3>
                   <p className="text-muted-foreground">
-                    The AI will analyze the event details and poster to create a comprehensive 500-word report.
+                    The AI will analyze the event details and generate a comprehensive 500-word report.
                   </p>
                   <Button 
                     type="button" 
@@ -416,34 +480,36 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           </Form>
         )}
 
-        <DialogFooter>
-          {step === 1 && isEventEnded && (
-            <Button 
-              type="button" 
-              onClick={() => setStep(2)} 
-              disabled={registeredUsers.length === 0 || !eventPhotoFile}
-            >
-              Next: Generate Report
-            </Button>
-          )}
-          {step === 2 && (
-            <Button type="button" onClick={() => setStep(1)} variant="outline" disabled={isGenerating}>
-              Back to Uploads
-            </Button>
-          )}
-          {step === 3 && (
-            <>
-              <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                Start Over
-              </Button>
-              <Button onClick={handleDownloadPdf} disabled={!reportData}>
-                <Download className="mr-2 h-4 w-4" /> Download PDF
-              </Button>
-            </>
-          )}
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
           <Button type="button" variant="ghost" onClick={handleClose}>
             Close
           </Button>
+          <div className="flex gap-2">
+            {step === 1 && isEventEnded && (
+              <Button 
+                type="button" 
+                onClick={() => setStep(2)} 
+                disabled={registeredUsers.length === 0 || !eventPhotoFile}
+              >
+                Next: Generate Report
+              </Button>
+            )}
+            {step === 2 && (
+              <Button type="button" onClick={() => setStep(1)} variant="outline" disabled={isGenerating}>
+                Back to Uploads
+              </Button>
+            )}
+            {step === 3 && (
+              <>
+                <Button type="button" onClick={handleDownloadDocx} disabled={!reportData} id="docx-download-button">
+                  <FileText className="mr-2 h-4 w-4" /> Download DOCX
+                </Button>
+                <Button onClick={handleDownloadPdf} disabled={!reportData}>
+                  <Download className="mr-2 h-4 w-4" /> Download PDF
+                </Button>
+              </>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
