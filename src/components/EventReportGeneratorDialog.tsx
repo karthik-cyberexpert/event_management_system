@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, FileDown, Loader2, Image, Users, FileText } from 'lucide-react';
+import { Download, UploadCloud, FileDown, Loader2, Image, Users } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import { format, isPast } from 'date-fns';
@@ -33,7 +33,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { saveAs } from 'file-saver';
 
 const MAX_PHOTO_SIZE = 1024 * 1024; // 1MB
 
@@ -231,112 +230,6 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     }, 500);
   };
   
-  // --- DOCX Generation ---
-  const handleDownloadDocx = () => {
-    if (!reportData) return;
-
-    const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.doc`;
-    
-    // Simplified HTML structure for DOCX to ensure block rendering and better alignment
-    const tableRows = reportData.registeredUsers.map((user, index) => `
-      <tr>
-        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.name || user.Name || 'N/A'}</td>
-        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.email || user.Email || 'N/A'}</td>
-        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.department || user.Department || 'N/A'}</td>
-      </tr>
-    `).join('');
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 1in; /* Set document margins */
-            width: 100%;
-          }
-          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; text-align: center; }
-          .section-title { text-align: left; font-weight: bold; font-size: 12pt; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-          .text-center { text-align: center; }
-          .mb-4 { margin-bottom: 16px; }
-          .mb-6 { margin-bottom: 24px; }
-          .p-4 { padding: 16px; }
-          .border { border: 1px solid #ccc; }
-          .rounded-md { border-radius: 6px; }
-          .bg-gray-50 { background-color: #f9f9f9; }
-          .ai-report { font-size: 10pt; line-height: 1.5; white-space: pre-wrap; }
-          
-          /* Table Styles */
-          .table-container { margin-top: 20px; }
-          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-          th { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10pt; background-color: #f2f2f2; font-weight: bold; }
-          
-          /* Image Styles for DOCX */
-          .photo-container { text-align: center; margin-top: 20px; margin-bottom: 20px; }
-          .photo-container img { 
-            max-width: 400px; 
-            max-height: 300px; 
-            height: auto; 
-            display: block; 
-            margin: 10px auto; /* Center image */
-          }
-        </style>
-      </head>
-      <body>
-        <div class="text-center mb-4">
-          <h1 style="font-size: 18pt; font-weight: bold; color: #1f4e79;">Final Event Report</h1>
-          <h2 style="font-size: 14pt; color: #2a6496;">${event.title}</h2>
-          <p style="font-size: 10pt; color: #666;">Date: ${format(new Date(event.event_date), 'PPP')}</p>
-        </div>
-
-        <!-- AI Generated Report -->
-        <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #ccc; background-color: #f9f9f9;">
-          <h3 style="font-size: 12pt; font-weight: bold; margin-bottom: 10px; text-align: left;">AI Generated Narrative Report</h3>
-          <div class="ai-report" style="font-size: 10pt; line-height: 1.5;">${reportData.aiReport}</div>
-        </div>
-
-        <!-- Event Photo -->
-        ${reportData.photoUrl ? `
-          <div class="photo-container">
-            <h3 class="section-title">Event Photo</h3>
-            <img 
-              src="${reportData.photoUrl}" 
-              alt="Event Photo" 
-              style="max-width: 400px; max-height: 300px; height: auto; display: block; margin: 10px auto;"
-            />
-          </div>
-        ` : ''}
-
-        <!-- Registered Users Summary -->
-        <div class="table-container">
-          <h3 class="section-title">Registered Users (${reportData.registeredUsers.length})</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Department</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRows}
-            </tbody>
-          </table>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const blob = new Blob([htmlContent], {
-      type: 'application/msword;charset=utf-8',
-    });
-
-    saveAs(blob, filename);
-    toast.success('DOCX file downloaded successfully!');
-  };
-
   // --- Render Helpers ---
 
   const renderReportContent = () => {
@@ -530,9 +423,6 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
             )}
             {step === 3 && (
               <>
-                <Button type="button" onClick={handleDownloadDocx} disabled={!reportData} id="docx-download-button">
-                  <FileText className="mr-2 h-4 w-4" /> Download DOCX
-                </Button>
                 <Button onClick={handlePrint} disabled={!reportData}>
                   <Download className="mr-2 h-4 w-4" /> Print / Save as PDF
                 </Button>
