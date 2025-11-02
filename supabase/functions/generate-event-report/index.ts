@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { GoogleGenAI } from 'https://esm.sh/@google/genai@0.16.0'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -6,44 +7,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Placeholder for AI API call (Gemini/Google API)
+// Initialize GoogleGenAI client using the secret key
+const ai = new GoogleGenAI(Deno.env.get('GEMINI_API_KEY') ?? '');
+
 async function callGeminiApi(eventDetails: any, posterUrl: string, registeredUsersCount: number): Promise<string> {
-    // NOTE: Replace this placeholder logic with actual API integration.
-    // This requires setting up the GEMINI_API_KEY secret and using a library like @google/genai
-    // or making a direct fetch request to the Gemini API endpoint.
-    
-    console.log("Simulating AI report generation...");
-    
-    const prompt = `Generate a 500-word professional event report based on the following details:
+    const prompt = `You are an expert academic event report writer. Generate a professional, comprehensive, and formal 500-word event report based on the following details. The report should cover the event's success, key activities, impact, and future recommendations.
+
+    --- Event Details ---
     Title: ${eventDetails.title}
     Objective: ${eventDetails.objective}
-    Outcomes: ${eventDetails.proposed_outcomes}
+    Proposed Outcomes: ${eventDetails.proposed_outcomes}
     Date: ${eventDetails.event_date}
     Venue: ${eventDetails.venues?.name || eventDetails.other_venue_details}
+    Organized by: ${eventDetails.department_club}
+    Mode: ${eventDetails.mode_of_event}
+    Category: ${eventDetails.category.join(', ')}
+    Target Audience: ${eventDetails.target_audience.join(', ')}
+    SDG Alignment: ${eventDetails.sdg_alignment.join(', ')}
+    Budget Estimate: ₹${eventDetails.budget_estimate?.toFixed(2) || '0.00'}
     Registered Participants: ${registeredUsersCount}
-    Poster URL: ${posterUrl}
     
-    The report should cover the event's success, key activities, impact, and future recommendations.`;
-
-    // Since we cannot execute external API calls here, we return a mock report.
-    const mockReport = `
-      ## Event Report: ${eventDetails.title}
-
-      The event, "${eventDetails.title}", successfully concluded on ${eventDetails.event_date}. Organized by ${eventDetails.department_club}, the primary objective was to ${eventDetails.objective}. The event was held at ${eventDetails.venues?.name || eventDetails.other_venue_details} and attracted ${registeredUsersCount} registered participants.
-
-      ### Key Highlights
-      The program commenced with a welcome address, followed by sessions led by distinguished speakers. The content focused heavily on achieving the proposed outcomes, which included ${eventDetails.proposed_outcomes}. The event utilized the promotional poster (available via URL) effectively to reach the target audience (${eventDetails.target_audience.join(', ')}).
-
-      ### Impact and Outcomes
-      The session was highly interactive, fostering significant engagement among students and faculty. Feedback indicated a high level of satisfaction with the content and delivery. The event successfully aligned with the Sustainable Development Goals, specifically focusing on ${eventDetails.sdg_alignment.join(', ')}.
-
-      ### Conclusion
-      Overall, the event was a resounding success, meeting all stated objectives and contributing positively to the academic environment. Future events should build upon this momentum, potentially expanding the scope to include more industry collaboration.
-      
-      --- (500 words simulated) ---
+    --- Instructions ---
+    1. Structure the report with clear headings (e.g., Introduction, Key Highlights, Outcomes and Impact, Conclusion).
+    2. Ensure the tone is formal and academic.
+    3. Do not mention the poster URL directly in the report text, but use the fact that a poster was used for promotion.
+    4. The final output must be only the report text, formatted using Markdown.
     `;
 
-    return mockReport;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    return response.text;
 }
 
 serve(async (req) => {
@@ -52,6 +48,7 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client with Service Role Key for secure data fetching
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -77,9 +74,17 @@ serve(async (req) => {
         .single();
 
     if (eventError || !event) throw new Error('Event not found or access denied.');
+    
+    // Ensure array fields are handled correctly for the prompt
+    const eventWithArrays = {
+        ...event,
+        category: event.category || [],
+        target_audience: event.target_audience || [],
+        sdg_alignment: event.sdg_alignment || [],
+    };
 
-    // 2. Call AI API (using mock function for now)
-    const reportText = await callGeminiApi(event, event.poster_url, registered_users_count);
+    // 2. Call AI API
+    const reportText = await callGeminiApi(eventWithArrays, event.poster_url, registered_users_count);
 
     return new Response(JSON.stringify({ report: reportText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
