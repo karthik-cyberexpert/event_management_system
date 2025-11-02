@@ -241,16 +241,17 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      // Check if content spans multiple pages
+      
+      const pageHeight = pdf.internal.pageSize.getHeight();
       let heightLeft = pdfHeight;
       let position = 0;
-      const pageHeight = pdf.internal.pageSize.getHeight();
 
+      // Add first page
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
+      // Add subsequent pages if content overflows
+      while (heightLeft > 0) {
         position = heightLeft - pdfHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
