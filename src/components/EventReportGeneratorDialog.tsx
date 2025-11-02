@@ -60,6 +60,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [eventPhotoFile, setEventPhotoFile] = useState<File | null>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -213,9 +214,20 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   // --- PDF Generation ---
 
   const handlePrint = () => {
+    if (!reportRef.current) return;
+
+    const printContents = reportRef.current.innerHTML;
+    
+    const printableContainer = document.createElement('div');
+    printableContainer.className = 'printable-container';
+    printableContainer.innerHTML = printContents;
+    document.body.appendChild(printableContainer);
+
     toast.info("Your browser's print dialog will open. Please select 'Save as PDF'.");
+
     setTimeout(() => {
       window.print();
+      document.body.removeChild(printableContainer);
     }, 500);
   };
   
@@ -331,7 +343,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     if (!reportData) return null;
 
     return (
-      <div className="printable-report">
+      <div className="printable-report" ref={reportRef}>
         <div className="p-4 bg-white text-black">
           <div className="text-center mb-4">
             <h1 className="text-xl font-bold text-gray-800">Final Event Report</h1>

@@ -61,7 +61,7 @@ const ReportRow = ({ label, value }: { label: string; value: any }) => {
   );
 };
 
-const EventReportContent = ({ data }: { data: ReportData }) => {
+const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwardedRef: React.Ref<HTMLDivElement> }) => {
   if (!data) return null;
 
   const formatApproval = (timestamp: string | null) => {
@@ -88,7 +88,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
 
 
   return (
-    <div className="printable-report">
+    <div className="printable-report" ref={forwardedRef}>
       <div className="p-4 bg-white text-black relative">
         <div className="absolute top-4 right-4 text-sm font-mono bg-gray-100 p-2 rounded border">
           ID: {data.unique_code || 'N/A'}
@@ -167,6 +167,7 @@ const EventReportContent = ({ data }: { data: ReportData }) => {
 const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
+  const reportContentRef = useRef<HTMLDivElement>(null);
 
   const fetchReportData = async () => {
     if (!event) return;
@@ -205,9 +206,20 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
   }, [isOpen, event]);
 
   const handlePrint = () => {
+    if (!reportContentRef.current) return;
+
+    const printContents = reportContentRef.current.innerHTML;
+    
+    const printableContainer = document.createElement('div');
+    printableContainer.className = 'printable-container';
+    printableContainer.innerHTML = printContents;
+    document.body.appendChild(printableContainer);
+
     toast.info("Your browser's print dialog will open. Please select 'Save as PDF'.");
+
     setTimeout(() => {
       window.print();
+      document.body.removeChild(printableContainer);
     }, 500);
   };
 
@@ -224,7 +236,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
           {loading && !reportData ? (
             <div className="text-center py-10">Loading report...</div>
           ) : reportData ? (
-            <EventReportContent data={reportData} />
+            <EventReportContent data={reportData} forwardedRef={reportContentRef} />
           ) : (
             <div className="text-center py-10 text-red-500">
               Error loading report data.
