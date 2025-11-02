@@ -63,7 +63,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [eventPhotoFile, setEventPhotoFile] = useState<File | null>(null);
-  const reportRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null); // Used for PDF capture
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -241,45 +241,52 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfPageWidth = pdf.internal.pageSize.getWidth();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
       
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const contentWidth = pdfWidth - 2 * PDF_MARGIN_MM;
-      const contentHeight = pageHeight - 2 * PDF_MARGIN_MM;
+      const contentWidth = pdfPageWidth - 2 * PDF_MARGIN_MM;
+      const contentHeight = pdfPageHeight - 2 * PDF_MARGIN_MM;
       
-      let heightLeft = pdfHeight;
-      let position = 0;
-
-      // Calculate the ratio of the canvas height to the PDF content height
+      // Calculate the ratio of the canvas width to the PDF content width
       const ratio = contentWidth / imgProps.width;
       const imgHeight = imgProps.height * ratio;
+      
+      let heightLeft = imgHeight;
+      let position = 0; // Y position on the canvas image
 
-      // Add pages with margins
+      // Loop to add pages
       while (heightLeft > 0) {
         if (position !== 0) {
           pdf.addPage();
         }
         
-        // Calculate the height of the slice to fit on the current page
-        const sliceHeight = Math.min(heightLeft, contentHeight);
+        // Calculate the height of the slice to fit on the current page (in image pixels)
+        const sliceHeightInPixels = contentHeight / ratio;
         
         // Add image slice: (imgData, format, x, y, width, height, alias, compression, rotation)
         // x = PDF_MARGIN_MM (left margin)
-        // y = PDF_MARGIN_MM (top margin) - position (offset for content already drawn)
+        // y = PDF_MARGIN_MM (top margin)
+        // width = contentWidth
+        // height = imgHeight (total height)
+        // sliceX, sliceY, sliceWidth, sliceHeight (source rectangle on the image)
         pdf.addImage(
           imgData, 
           'PNG', 
           PDF_MARGIN_MM, 
-          PDF_MARGIN_MM + position, 
+          PDF_MARGIN_MM, 
           contentWidth, 
           imgHeight, 
           undefined, 
-          'FAST'
+          'FAST',
+          0,
+          0,
+          position,
+          imgProps.width,
+          sliceHeightInPixels
         );
         
         heightLeft -= contentHeight;
-        position -= contentHeight;
+        position += sliceHeightInPixels;
       }
       
       const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.pdf`;
@@ -294,14 +301,19 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   
   // --- DOCX Generation ---
   const handleDownloadDocx = () => {
-    if (!reportData || !reportRef.current) return;
+    if (!reportData) return;
 
     const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.doc`;
     
-    // Get the inner HTML content of the report area
-    const content = reportRef.current.innerHTML;
+    // Simplified HTML structure for DOCX to ensure block rendering and better alignment
+    const tableRows = reportData.registeredUsers.map((user, index) => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.name || user.Name || 'N/A'}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.email || user.Email || 'N/A'}</td>
+        <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.department || user.Department || 'N/A'}</td>
+      </tr>
+    `).join('');
 
-    // Basic HTML structure for DOCX conversion with improved styles
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -311,13 +323,10 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           body { 
             font-family: Arial, sans-serif; 
             margin: 1in; /* Set document margins */
+            width: 100%;
           }
-          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; }
-          .report-container { 
-            width: 100%; 
-            max-width: 700px; 
-            margin: 0 auto; 
-          }
+          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; text-align: center; }
+          .section-title { text-align: left; font-weight: bold; font-size: 12pt; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
           .text-center { text-align: center; }
           .mb-4 { margin-bottom: 16px; }
           .mb-6 { margin-bottom: 24px; }
@@ -325,17 +334,15 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           .border { border: 1px solid #ccc; }
           .rounded-md { border-radius: 6px; }
           .bg-gray-50 { background-color: #f9f9f9; }
-          .whitespace-pre-wrap { white-space: pre-wrap; }
-          .ai-report { font-size: 10pt; line-height: 1.5; }
+          .ai-report { font-size: 10pt; line-height: 1.5; white-space: pre-wrap; }
           
           /* Table Styles */
-          .table-container { margin-top: 20px; border: 1px solid #ccc; }
+          .table-container { margin-top: 20px; }
           table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10pt; }
-          th { background-color: #f2f2f2; }
+          th { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10pt; background-color: #f2f2f2; font-weight: bold; }
           
           /* Image Styles for DOCX */
-          .photo-container { text-align: center; }
+          .photo-container { text-align: center; margin-top: 20px; margin-bottom: 20px; }
           .photo-container img { 
             max-width: 400px; 
             max-height: 300px; 
@@ -346,8 +353,45 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         </style>
       </head>
       <body>
-        <div class="report-container">
-          ${content}
+        <div class="text-center mb-4">
+          <h1 style="font-size: 18pt; font-weight: bold; color: #1f4e79;">Final Event Report</h1>
+          <h2 style="font-size: 14pt; color: #2a6496;">${event.title}</h2>
+          <p style="font-size: 10pt; color: #666;">Date: ${format(new Date(event.event_date), 'PPP')}</p>
+        </div>
+
+        <!-- AI Generated Report -->
+        <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #ccc; background-color: #f9f9f9;">
+          <h3 style="font-size: 12pt; font-weight: bold; margin-bottom: 10px; text-align: left;">AI Generated Narrative Report</h3>
+          <div class="ai-report" style="font-size: 10pt; line-height: 1.5;">${reportData.aiReport}</div>
+        </div>
+
+        <!-- Event Photo -->
+        ${reportData.photoUrl ? `
+          <div class="photo-container">
+            <h3 class="section-title">Event Photo</h3>
+            <img 
+              src="${reportData.photoUrl}" 
+              alt="Event Photo" 
+              style="max-width: 400px; max-height: 300px; height: auto; display: block; margin: 10px auto;"
+            />
+          </div>
+        ` : ''}
+
+        <!-- Registered Users Summary -->
+        <div class="table-container">
+          <h3 class="section-title">Registered Users (${reportData.registeredUsers.length})</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
         </div>
       </body>
       </html>
