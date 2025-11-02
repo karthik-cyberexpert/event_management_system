@@ -396,7 +396,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className={cn("sm:max-w-4xl max-h-[95vh] overflow-y-auto", step === 3 && "sm:max-w-5xl")}>
-        <DialogHeader>
+        <DialogHeader className="print:hidden">
           <DialogTitle>Generate Final Report: {event?.title}</DialogTitle>
           <DialogDescription>
             {step === 1 && 'Step 1: Upload required files (Registered Users List & Event Photo).'}
@@ -487,7 +487,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
               {/* Step 3: Preview */}
               {step === 3 && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold">Final Report Preview</h3>
+                  <h3 className="text-xl font-semibold print:hidden">Final Report Preview</h3>
                   <div className="border rounded-lg overflow-hidden">
                     {renderReportContent()}
                   </div>
@@ -497,7 +497,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           </Form>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2">
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2 print:hidden">
           <Button type="button" variant="ghost" onClick={handleClose}>
             Close
           </Button>

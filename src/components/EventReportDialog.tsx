@@ -215,7 +215,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-4xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="print:hidden">
             <DialogTitle>Event Report: {event?.title}</DialogTitle>
             <DialogDescription>
               Official report containing all event details and approval statuses.
