@@ -38,6 +38,7 @@ import {
 import { saveAs } from 'file-saver';
 
 const MAX_PHOTO_SIZE = 1024 * 1024; // 1MB
+const PDF_MARGIN_MM = 10; // 10mm margin on all sides
 
 const formSchema = z.object({
   registered_users_file: z.any().optional(),
@@ -239,23 +240,46 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const contentWidth = pdfWidth - 2 * PDF_MARGIN_MM;
+      const contentHeight = pageHeight - 2 * PDF_MARGIN_MM;
+      
       let heightLeft = pdfHeight;
       let position = 0;
 
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
+      // Calculate the ratio of the canvas height to the PDF content height
+      const ratio = contentWidth / imgProps.width;
+      const imgHeight = imgProps.height * ratio;
 
-      // Add subsequent pages if content overflows
+      // Add pages with margins
       while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+        if (position !== 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the height of the slice to fit on the current page
+        const sliceHeight = Math.min(heightLeft, contentHeight);
+        
+        // Add image slice: (imgData, format, x, y, width, height, alias, compression, rotation)
+        // x = PDF_MARGIN_MM (left margin)
+        // y = PDF_MARGIN_MM (top margin) - position (offset for content already drawn)
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          PDF_MARGIN_MM, 
+          PDF_MARGIN_MM + position, 
+          contentWidth, 
+          imgHeight, 
+          undefined, 
+          'FAST'
+        );
+        
+        heightLeft -= contentHeight;
+        position -= contentHeight;
       }
       
       const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.pdf`;
@@ -277,22 +301,48 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     // Get the inner HTML content of the report area
     const content = reportRef.current.innerHTML;
 
-    // Basic HTML structure for DOCX conversion (using mso-number-format for better compatibility)
+    // Basic HTML structure for DOCX conversion with improved styles
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1, h2, h3 { color: #1f4e79; }
-          .report-container { max-width: 800px; margin: 0 auto; }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 1in; /* Set document margins */
+          }
+          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; }
+          .report-container { 
+            width: 100%; 
+            max-width: 700px; 
+            margin: 0 auto; 
+          }
+          .text-center { text-align: center; }
+          .mb-4 { margin-bottom: 16px; }
+          .mb-6 { margin-bottom: 24px; }
+          .p-4 { padding: 16px; }
+          .border { border: 1px solid #ccc; }
+          .rounded-md { border-radius: 6px; }
+          .bg-gray-50 { background-color: #f9f9f9; }
+          .whitespace-pre-wrap { white-space: pre-wrap; }
+          .ai-report { font-size: 10pt; line-height: 1.5; }
+          
+          /* Table Styles */
           .table-container { margin-top: 20px; border: 1px solid #ccc; }
-          table { width: 100%; border-collapse: collapse; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
           th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 10pt; }
           th { background-color: #f2f2f2; }
-          .photo-container img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
-          .ai-report { white-space: pre-wrap; }
+          
+          /* Image Styles for DOCX */
+          .photo-container { text-align: center; }
+          .photo-container img { 
+            max-width: 400px; 
+            max-height: 300px; 
+            height: auto; 
+            display: block; 
+            margin: 10px auto; /* Center image */
+          }
         </style>
       </head>
       <body>
