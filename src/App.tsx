@@ -6,7 +6,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { MadeWithDyad } from "./components/made-with-dyad";
 import Layout from "./components/Layout";
 import ManageVenues from "./pages/admin/ManageVenues";
 import ManageUsers from "./pages/admin/ManageUsers";
@@ -78,7 +77,6 @@ const App = () => (
             <main className="flex-grow">
               <AppRoutes />
             </main>
-            <MadeWithDyad />
           </div>
         </AuthProvider>
       </BrowserRouter>
