@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-import { GoogleGenAI } from 'https://esm.sh/@google/genai'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -7,10 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Initialize GoogleGenAI client using the secret key
-const ai = new GoogleGenAI(Deno.env.get('GEMINI_API_KEY') ?? '');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-async function callGeminiApi(eventDetails: any, posterUrl: string, registeredUsersCount: number): Promise<string> {
+async function callGeminiApi(eventDetails: any, registeredUsersCount: number): Promise<string> {
     const prompt = `You are an expert academic event report writer. Generate a professional, comprehensive, and formal 500-word event report based on the following details. The report should cover the event's success, key activities, impact, and future recommendations.
 
     --- Event Details ---
@@ -30,16 +30,34 @@ async function callGeminiApi(eventDetails: any, posterUrl: string, registeredUse
     --- Instructions ---
     1. Structure the report with clear headings (e.g., Introduction, Key Highlights, Outcomes and Impact, Conclusion).
     2. Ensure the tone is formal and academic.
-    3. Do not mention the poster URL directly in the report text, but use the fact that a poster was used for promotion.
-    4. The final output must be only the report text, formatted using Markdown.
+    3. The final output must be only the report text, formatted using Markdown.
     `;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+    const response = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        }),
     });
 
-    return response.text;
+    if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(`Gemini API failed: ${response.status} - ${JSON.stringify(errorBody)}`);
+    }
+
+    const data = await response.json();
+    
+    // Extract the text from the response structure
+    const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!reportText) {
+        throw new Error('Gemini API returned an empty or malformed response.');
+    }
+
+    return reportText;
 }
 
 serve(async (req) => {
@@ -84,7 +102,9 @@ serve(async (req) => {
     };
 
     // 2. Call AI API
-    const reportText = await callGeminiApi(eventWithArrays, event.poster_url, registered_users_count);
+    // Note: The posterUrl parameter was removed from callGeminiApi since we are using fetch and not the SDK, 
+    // and the prompt doesn't require the URL itself.
+    const reportText = await callGeminiApi(eventWithArrays, registered_users_count);
 
     return new Response(JSON.stringify({ report: reportText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
