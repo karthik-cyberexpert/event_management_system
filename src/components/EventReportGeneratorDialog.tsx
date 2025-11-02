@@ -63,7 +63,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [eventPhotoFile, setEventPhotoFile] = useState<File | null>(null);
-  const reportRef = useRef<HTMLDivElement>(null); // Used for PDF capture
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -244,49 +244,45 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const pdfPageWidth = pdf.internal.pageSize.getWidth();
       const pdfPageHeight = pdf.internal.pageSize.getHeight();
       
-      const contentWidth = pdfPageWidth - 2 * PDF_MARGIN_MM;
-      const contentHeight = pdfPageHeight - 2 * PDF_MARGIN_MM;
+      const contentWidthMM = pdfPageWidth - 2 * PDF_MARGIN_MM;
+      const contentHeightMM = pdfPageHeight - 2 * PDF_MARGIN_MM;
       
       // Calculate the ratio of the canvas width to the PDF content width
-      const ratio = contentWidth / imgProps.width;
-      const imgHeight = imgProps.height * ratio;
+      const scaleFactor = contentWidthMM / imgProps.width;
+      const totalHeightMM = imgProps.height * scaleFactor;
       
-      let heightLeft = imgHeight;
-      let position = 0; // Y position on the canvas image
+      let heightLeftMM = totalHeightMM;
+      let currentYPositionPx = 0; // Tracks where we are on the source canvas (in pixels)
 
       // Loop to add pages
-      while (heightLeft > 0) {
-        if (position !== 0) {
+      while (heightLeftMM > 0) {
+        if (currentYPositionPx !== 0) {
           pdf.addPage();
         }
+
+        // Height of the slice we are drawing on this page (in mm)
+        const sliceHeightMM = Math.min(heightLeftMM, contentHeightMM);
         
-        // Calculate the height of the slice to fit on the current page (in image pixels)
-        const sliceHeightInPixels = contentHeight / ratio;
-        
-        // Add image slice: (imgData, format, x, y, width, height, alias, compression, rotation)
-        // x = PDF_MARGIN_MM (left margin)
-        // y = PDF_MARGIN_MM (top margin)
-        // width = contentWidth
-        // height = imgHeight (total height)
-        // sliceX, sliceY, sliceWidth, sliceHeight (source rectangle on the image)
+        // Height of the slice in source canvas pixels
+        const sliceHeightPx = sliceHeightMM / scaleFactor;
+
+        // Draw the slice onto the PDF page, starting at the top margin (PDF_MARGIN_MM)
+        // Parameters: (imgData, format, x, y, width, height, sX, sY, sWidth, sHeight)
         pdf.addImage(
-          imgData, 
-          'PNG', 
-          PDF_MARGIN_MM, 
-          PDF_MARGIN_MM, 
-          contentWidth, 
-          imgHeight, 
-          undefined, 
-          'FAST',
-          0,
-          0,
-          position,
-          imgProps.width,
-          sliceHeightInPixels
+            imgData, 
+            'PNG', 
+            PDF_MARGIN_MM, // Destination X (Left Margin)
+            PDF_MARGIN_MM, // Destination Y (Top Margin)
+            contentWidthMM, // Destination Width
+            sliceHeightMM, // Destination Height
+            0, // Source X
+            currentYPositionPx, // Source Y (start of the slice)
+            imgProps.width, // Source Width
+            sliceHeightPx // Source Height
         );
-        
-        heightLeft -= contentHeight;
-        position += sliceHeightInPixels;
+
+        heightLeftMM -= contentHeightMM;
+        currentYPositionPx += sliceHeightPx;
       }
       
       const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.pdf`;
@@ -305,7 +301,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
     const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.doc`;
     
-    // Simplified HTML structure for DOCX to ensure block rendering and better alignment
+    // Get the inner HTML content of the report area
     const tableRows = reportData.registeredUsers.map((user, index) => `
       <tr>
         <td style="padding: 8px; border: 1px solid #ccc; font-size: 10pt;">${user.name || user.Name || 'N/A'}</td>
@@ -314,6 +310,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       </tr>
     `).join('');
 
+    // Simplified HTML structure for DOCX to ensure block rendering and better alignment
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -325,8 +322,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
             margin: 1in; /* Set document margins */
             width: 100%;
           }
-          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; text-align: center; }
-          .section-title { text-align: left; font-weight: bold; font-size: 12pt; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+          h1, h2, h3 { color: #1f4e79; margin-top: 1em; margin-bottom: 0.5em; }
           .text-center { text-align: center; }
           .mb-4 { margin-bottom: 16px; }
           .mb-6 { margin-bottom: 24px; }
@@ -368,7 +364,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         <!-- Event Photo -->
         ${reportData.photoUrl ? `
           <div class="photo-container">
-            <h3 class="section-title">Event Photo</h3>
+            <h3 style="font-size: 12pt; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Event Photo</h3>
             <img 
               src="${reportData.photoUrl}" 
               alt="Event Photo" 
@@ -379,7 +375,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
         <!-- Registered Users Summary -->
         <div class="table-container">
-          <h3 class="section-title">Registered Users (${reportData.registeredUsers.length})</h3>
+          <h3 style="font-size: 12pt; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: left;">Registered Users (${reportData.registeredUsers.length})</h3>
           <table>
             <thead>
               <tr>
