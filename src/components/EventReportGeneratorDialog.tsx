@@ -23,8 +23,6 @@ import { toast } from 'sonner';
 import { Download, UploadCloud, FileDown, Loader2, Image, Users, FileText } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { format, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -38,7 +36,6 @@ import {
 import { saveAs } from 'file-saver';
 
 const MAX_PHOTO_SIZE = 1024 * 1024; // 1MB
-const PDF_MARGIN_MM = 10; // 10mm margin on all sides
 
 const formSchema = z.object({
   registered_users_file: z.any().optional(),
@@ -63,7 +60,6 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [eventPhotoFile, setEventPhotoFile] = useState<File | null>(null);
-  const reportRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -216,81 +212,11 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
   // --- PDF Generation ---
 
-  const handleDownloadPdf = async () => {
-    if (!reportData || !reportRef.current) return;
-
-    toast.loading('Generating PDF...', { id: 'pdf-gen' });
-
-    try {
-      const docxButton = document.getElementById('docx-download-button');
-      if (docxButton) docxButton.style.display = 'none';
-
-      const mainCanvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        windowWidth: reportRef.current.scrollWidth,
-        windowHeight: reportRef.current.scrollHeight,
-      });
-
-      if (docxButton) docxButton.style.display = 'inline-flex';
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfPageWidth = pdf.internal.pageSize.getWidth();
-      const pdfPageHeight = pdf.internal.pageSize.getHeight();
-      
-      const contentWidthMM = pdfPageWidth - 2 * PDF_MARGIN_MM;
-      const contentHeightMM = pdfPageHeight - 2 * PDF_MARGIN_MM;
-      
-      const scaleFactor = contentWidthMM / mainCanvas.width;
-      const totalHeightMM = mainCanvas.height * scaleFactor;
-      
-      let yPositionOnCanvasPx = 0;
-      const pages = Math.ceil(totalHeightMM / contentHeightMM);
-
-      for (let i = 0; i < pages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-
-        const sliceHeightPx = Math.min(
-          mainCanvas.height - yPositionOnCanvasPx,
-          contentHeightMM / scaleFactor
-        );
-        
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = mainCanvas.width;
-        tempCanvas.height = sliceHeightPx;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        if (tempCtx) {
-          tempCtx.drawImage(
-            mainCanvas,
-            0, yPositionOnCanvasPx, mainCanvas.width, sliceHeightPx,
-            0, 0, mainCanvas.width, sliceHeightPx
-          );
-
-          const sliceImgData = tempCanvas.toDataURL('image/png');
-          const sliceHeightMM = sliceHeightPx * scaleFactor;
-          
-          pdf.addImage(
-            sliceImgData, 'PNG',
-            PDF_MARGIN_MM, PDF_MARGIN_MM,
-            contentWidthMM, sliceHeightMM
-          );
-        }
-        
-        yPositionOnCanvasPx += sliceHeightPx;
-      }
-      
-      const filename = `${event.title.replace(/\s/g, '_')}_Final_Report.pdf`;
-      pdf.save(filename);
-
-      toast.success('PDF downloaded successfully!', { id: 'pdf-gen' });
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      toast.error('Failed to generate PDF.', { id: 'pdf-gen' });
-    }
+  const handlePrint = () => {
+    toast.info("Your browser's print dialog will open. Please select 'Save as PDF'.");
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
   
   // --- DOCX Generation ---
@@ -405,53 +331,55 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     if (!reportData) return null;
 
     return (
-      <div className="p-4 bg-white text-black" ref={reportRef}>
-        <div className="text-center mb-4">
-          <h1 className="text-xl font-bold text-gray-800">Final Event Report</h1>
-          <h2 className="text-lg font-semibold text-primary">{event.title}</h2>
-          <p className="text-sm text-gray-600">Date: {format(new Date(event.event_date), 'PPP')}</p>
-        </div>
-
-        {/* AI Generated Report */}
-        <div className="mb-6 p-4 border rounded-md bg-gray-50 whitespace-pre-wrap">
-          <h3 className="text-base font-bold mb-2">AI Generated Narrative Report</h3>
-          <div className="ai-report text-sm">{reportData.aiReport}</div>
-        </div>
-
-        {/* Event Photo */}
-        {reportData.photoUrl && (
-          <div className="mb-6 photo-container">
-            <h3 className="text-base font-bold mb-2">Event Photo</h3>
-            <img 
-              src={reportData.photoUrl} 
-              alt="Event Photo" 
-              className="w-full h-auto object-contain rounded-md shadow-md"
-              style={{ maxWidth: '400px', maxHeight: '300px', margin: '0 auto' }} // Fixed size for PDF/DOCX
-            />
+      <div className="printable-report">
+        <div className="p-4 bg-white text-black">
+          <div className="text-center mb-4">
+            <h1 className="text-xl font-bold text-gray-800">Final Event Report</h1>
+            <h2 className="text-lg font-semibold text-primary">{event.title}</h2>
+            <p className="text-sm text-gray-600">Date: {format(new Date(event.event_date), 'PPP')}</p>
           </div>
-        )}
 
-        {/* Registered Users Summary - Displaying all users without scroll */}
-        <div className="mb-6 table-container">
-          <h3 className="text-base font-bold mb-2 p-2">Registered Users ({reportData.registeredUsers.length})</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reportData.registeredUsers.map((user, index) => (
-                <TableRow key={index}>
-                  <TableCell>{user.name || user.Name || 'N/A'}</TableCell>
-                  <TableCell>{user.email || user.Email || 'N/A'}</TableCell>
-                  <TableCell>{user.department || user.Department || 'N/A'}</TableCell>
+          {/* AI Generated Report */}
+          <div className="mb-6 p-4 border rounded-md bg-gray-50 whitespace-pre-wrap">
+            <h3 className="text-base font-bold mb-2">AI Generated Narrative Report</h3>
+            <div className="ai-report text-sm">{reportData.aiReport}</div>
+          </div>
+
+          {/* Event Photo */}
+          {reportData.photoUrl && (
+            <div className="mb-6 photo-container">
+              <h3 className="text-base font-bold mb-2">Event Photo</h3>
+              <img 
+                src={reportData.photoUrl} 
+                alt="Event Photo" 
+                className="w-full h-auto object-contain rounded-md shadow-md"
+                style={{ maxWidth: '400px', maxHeight: '300px', margin: '0 auto' }} // Fixed size for PDF/DOCX
+              />
+            </div>
+          )}
+
+          {/* Registered Users Summary - Displaying all users without scroll */}
+          <div className="mb-6 table-container">
+            <h3 className="text-base font-bold mb-2 p-2">Registered Users ({reportData.registeredUsers.length})</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {reportData.registeredUsers.map((user, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{user.name || user.Name || 'N/A'}</TableCell>
+                    <TableCell>{user.email || user.Email || 'N/A'}</TableCell>
+                    <TableCell>{user.department || user.Department || 'N/A'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     );
@@ -593,8 +521,8 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                 <Button type="button" onClick={handleDownloadDocx} disabled={!reportData} id="docx-download-button">
                   <FileText className="mr-2 h-4 w-4" /> Download DOCX
                 </Button>
-                <Button onClick={handleDownloadPdf} disabled={!reportData}>
-                  <Download className="mr-2 h-4 w-4" /> Download PDF
+                <Button onClick={handlePrint} disabled={!reportData}>
+                  <Download className="mr-2 h-4 w-4" /> Print / Save as PDF
                 </Button>
               </>
             )}

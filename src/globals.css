@@ -98,8 +98,26 @@
 }
 
 @media print {
-  body {
+  body * {
+    visibility: hidden;
+  }
+
+  .printable-report, .printable-report * {
+    visibility: visible;
+  }
+
+  .printable-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     margin: 0;
-    padding: 1rem;
+    padding: 0;
+    border: none;
+  }
+
+  /* Ensure dialogs and other UI are completely gone */
+  [role="dialog"], footer, header, aside {
+    display: none !important;
   }
 }
