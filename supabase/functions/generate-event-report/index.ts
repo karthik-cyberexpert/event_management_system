@@ -35,10 +35,10 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
     - The output must be only a single block of text.
     `;
 
+    // CORRECTED PAYLOAD STRUCTURE: config is now a top-level key
     const payload = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
-            // Ensure the model output is concise
             maxOutputTokens: 500, 
         }
     };
@@ -66,7 +66,6 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
     const objectiveText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!objectiveText) {
-        // Check for specific error messages in the response structure if available
         const errorReason = data.promptFeedback?.blockReason || 'No text generated.';
         throw new Error(`Gemini API returned an empty response. Reason: ${errorReason}`);
     }
