@@ -19,7 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // <-- Added this import
+  FormDescription,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Download, UploadCloud, Loader2, Image, Users, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
@@ -41,11 +41,8 @@ const MAX_PHOTOS = 4;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 
 const ACTIVITY_LEAD_BY_OPTIONS = [
-  'Internal Faculty',
-  'External Speaker',
-  'Student Coordinator',
-  'Club/Society Head',
-  'Department HOD',
+  'Institute Council',
+  'Student Council',
 ];
 
 const socialMediaPlatforms = [
