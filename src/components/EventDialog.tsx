@@ -45,7 +45,7 @@ import PosterDialog from './PosterDialog'; // New Import
 // --- Constants for Dropdowns & Checkboxes ---
 
 const PROGRAM_DRIVEN_BY = ['Institute Council', 'Student Council'];
-const QUARTERS = Array.from({ length: 8 }, (_, i) => `Semester ${Math.floor(i / 2) + 1}-Quarter ${i % 2 + 1}`);
+const QUARTERS = Array.from({ length: 16 }, (_, i) => `Semester ${Math.floor(i / 2) + 1}-Quarter ${i % 2 + 1}`);
 const PROGRAM_TYPES = [
   'Level 1 - Expert Talk', 'Level 1 - Exposure Visit', 'Level 1 - Mentoring Session', 'Level 1- Exhibition',
   'Level 2 - Competition', 'Level 2 - Conference', 'Level 2 - Exposure Visit', 'Level 2 - Seminar', 'Level 2 - Workshop',
