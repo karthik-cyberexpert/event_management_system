@@ -6,11 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 async function callGeminiApi(eventDetails: any): Promise<string> {
+    if (!GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.');
+    }
+    
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
     const prompt = `Based on the following event details, write a concise and formal "Objective" section for an activity report. The output should be a single, well-written paragraph suitable for an official document.
 
     --- Event Details ---
@@ -35,8 +40,13 @@ async function callGeminiApi(eventDetails: any): Promise<string> {
     });
 
     if (!response.ok) {
-        const errorBody = await response.json();
-        throw new Error(`Gemini API failed: ${response.status} - ${JSON.stringify(errorBody)}`);
+        let errorBody;
+        try {
+            errorBody = await response.json();
+        } catch {
+            errorBody = { message: 'Could not parse error response body.' };
+        }
+        throw new Error(`Gemini API failed with status ${response.status}. Details: ${JSON.stringify(errorBody)}`);
     }
 
     const data = await response.json();
