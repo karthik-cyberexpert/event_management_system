@@ -8,10 +8,16 @@ const corsHeaders = {
 
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
-async function callGeminiApi(eventDetails: any): Promise<string> {
+/**
+ * Calls the Gemini API to generate a concise objective based on event details.
+ * @param eventDetails Object containing title, objective, and description.
+ * @returns The generated objective text.
+ */
+async function callGeminiApi(eventDetails: { title: string, objective: string, description: string }): Promise<string> {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    
     if (!GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is not configured in Supabase secrets. Please check your project settings.');
+        throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.');
     }
     
     const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -29,22 +35,28 @@ async function callGeminiApi(eventDetails: any): Promise<string> {
     - The output must be only a single block of text.
     `;
 
+    const payload = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+            // Ensure the model output is concise
+            maxOutputTokens: 500, 
+        }
+    };
+
     const response = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-        }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-        let errorBody = { message: 'Unknown error or empty response body.' };
+        let errorBody;
         try {
             errorBody = await response.json();
         } catch {
-            // Ignore JSON parsing error if response body is not JSON
+            errorBody = { message: 'Could not parse error response body from Gemini API.' };
         }
         // Throw a detailed error including the HTTP status and any message from the API
         throw new Error(`Gemini API failed with status ${response.status}. Details: ${JSON.stringify(errorBody)}`);
@@ -54,7 +66,9 @@ async function callGeminiApi(eventDetails: any): Promise<string> {
     const objectiveText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!objectiveText) {
-        throw new Error('Gemini API returned an empty or malformed response.');
+        // Check for specific error messages in the response structure if available
+        const errorReason = data.promptFeedback?.blockReason || 'No text generated.';
+        throw new Error(`Gemini API returned an empty response. Reason: ${errorReason}`);
     }
 
     return objectiveText;
@@ -66,9 +80,6 @@ serve(async (req) => {
   }
 
   try {
-    // Manual authentication handling is skipped here as this is an admin function called from the client
-    // but relies on the service role key for DB access (via supabaseAdmin) and external API key (via Deno.env)
-
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -83,6 +94,7 @@ serve(async (req) => {
         });
     }
 
+    // Fetch only the necessary fields
     const { data: event, error: eventError } = await supabaseAdmin
         .from('events')
         .select('title, objective, description')
