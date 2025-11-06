@@ -175,8 +175,16 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-event-report', {
         body: { event_id: event.id },
       });
-      if (aiError) throw aiError;
-      if (aiData.error) throw new Error(aiData.error);
+      
+      if (aiError) {
+        // Handle network/invocation error
+        throw new Error(`Edge Function invocation failed: ${aiError.message}`);
+      }
+      
+      // Handle application-level error returned in the body (e.g., missing API key)
+      if (aiData.error) {
+        throw new Error(aiData.error);
+      }
 
       // 3. Prepare Social Media Links
       const social_media_links: { [key: string]: string } = {};
