@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
 import { Image } from 'lucide-react';
-import PosterDialog from './PosterDialog'; // New Import
+import PosterDialog from './PosterDialog';
 
 const formSchema = z.object({
   remarks: z.string().optional(),
@@ -88,7 +88,6 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     const action = actions[actionType as keyof typeof actions];
     const remarks = form.getValues('remarks');
     
-    // Enforce mandatory remarks for 'return' and 'reject' actions
     if ((actionType === 'reject' || actionType === 'return') && !remarks?.trim()) {
       form.setError('remarks', { type: 'manual', message: 'Remarks are required to reject or return an event.' });
       return;
@@ -121,7 +120,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     const names = event.coordinator_name || [];
     const contacts = event.coordinator_contact || [];
     
-    if (names.length === 0) return <span>N/A</span>; // Changed to span
+    if (names.length === 0) return <span>N/A</span>;
 
     return (
       <ul className="list-disc list-inside space-y-1">
@@ -138,7 +137,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
     const names = event.speakers || [];
     const details = event.speaker_details || [];
     
-    if (names.length === 0) return <span>N/A</span>; // Changed to span
+    if (names.length === 0) return <span>N/A</span>;
 
     return (
       <ul className="list-disc list-inside space-y-1">
@@ -189,14 +188,28 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
               <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
             </div>
 
-            <div><strong>Description:</strong> {event.description || 'N/A'}</div>
-            <div><strong>Objective:</strong> {event.objective || 'N/A'}</div>
-            <div><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</div>
-            <div><strong>Category:</strong> {formatArray(event.category)}</div>
-            <div><strong>Target Audience:</strong> {formatArray(event.target_audience)}</div>
-            <div><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</div>
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-2">Program Details</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div><strong>Academic Year:</strong> {event.academic_year || 'N/A'}</div>
+                <div><strong>Program Driven By:</strong> {event.program_driven_by || 'N/A'}</div>
+                <div><strong>Quarter:</strong> {event.quarter || 'N/A'}</div>
+                <div><strong>Program Theme:</strong> {event.program_theme || 'N/A'}</div>
+                <div className="col-span-2"><strong>Program Type:</strong> {event.program_type || 'N/A'}</div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-2">Event Objectives</h4>
+              <div><strong>Description:</strong> {event.description || 'N/A'}</div>
+              <div><strong>Objective:</strong> {event.objective || 'N/A'}</div>
+              <div><strong>Proposed Outcomes:</strong> {event.proposed_outcomes || 'N/A'}</div>
+              <div><strong>Category:</strong> {formatArray(event.category)}</div>
+              <div><strong>Target Audience:</strong> {formatArray(event.target_audience)}</div>
+              <div><strong>SDG Alignment:</strong> {formatArray(event.sdg_alignment)}</div>
+            </div>
             
-            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-4">
               <div className="col-span-2">
                 <strong>Speakers/Resource Persons:</strong>
                 {renderSpeakers()}
@@ -206,7 +219,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
               <div className="col-span-2"><strong>Promotion Strategy:</strong> {formatArray(event.promotion_strategy)}</div>
             </div>
 
-            <div className="border-t pt-4 space-y-2">
+            <div className="border-t pt-4 space-y-2 mt-4">
               <div><strong>HOD Approval Date:</strong> {event.hod_approval_at ? format(new Date(event.hod_approval_at), 'PPP p') : 'Pending'}</div>
               <div><strong>Dean Approval Date:</strong> {event.dean_approval_at ? format(new Date(event.dean_approval_at), 'PPP p') : 'Pending'}</div>
               <div><strong>Principal Approval Date:</strong> {event.principal_approval_at ? format(new Date(event.principal_approval_at), 'PPP p') : 'Pending'}</div>

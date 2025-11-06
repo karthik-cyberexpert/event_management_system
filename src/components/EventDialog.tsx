@@ -42,7 +42,19 @@ import ReturnReasonDialog from './ReturnReasonDialog';
 import { useDropzone } from 'react-dropzone';
 import PosterDialog from './PosterDialog'; // New Import
 
-// --- Constants for Checkbox Groups ---
+// --- Constants for Dropdowns & Checkboxes ---
+
+const PROGRAM_DRIVEN_BY = ['Institute Council', 'Student Council'];
+const QUARTERS = Array.from({ length: 8 }, (_, i) => `Semester ${Math.floor(i / 2) + 1}-Quarter ${i % 2 + 1}`);
+const PROGRAM_TYPES = [
+  'Level 1 - Expert Talk', 'Level 1 - Exposure Visit', 'Level 1 - Mentoring Session', 'Level 1- Exhibition',
+  'Level 2 - Competition', 'Level 2 - Conference', 'Level 2 - Exposure Visit', 'Level 2 - Seminar', 'Level 2 - Workshop',
+  'Level 3 - Bootcamp', 'Level 3 - Competition/Hacakthon', 'Level 3 - Demo Day', 'Level 3 - Exhibition', 'Level 3 - Workshop', 'Level 3 - Exposure Visit',
+  'Level 4 - Challenges', 'Level 4 - Competition/Hackathon', 'Level 4 - Tech Fest', 'Level 4 - Bootcamp', 'Level 4 - Workshop', 'Level 4 - Exhibition/Demo Day'
+];
+const PROGRAM_THEMES = [
+  'IPR & Technology Transfer', 'Innovation & Design Thinking', 'Entrepreneurship & Startup', 'Pre-Incubation & Incubation Management'
+];
 
 const EVENT_CATEGORIES = [
   'curricular', 'tlp', 'extended curricular activity', 'R & D', 'consultancy', 
@@ -98,6 +110,13 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   
+  // New Program Detail Fields
+  academic_year: z.string(),
+  program_driven_by: z.string().min(1, 'This field is required'),
+  quarter: z.string().min(1, 'This field is required'),
+  program_type: z.string().min(1, 'This field is required'),
+  program_theme: z.string().min(1, 'This field is required'),
+
   coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
   speakers_list: z.array(speakerSchema).optional(),
 
@@ -125,7 +144,6 @@ const formSchema = z.object({
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
   
-  // New field for poster URL (stored in DB)
   poster_url: z.string().optional(), 
 }).refine(data => {
     if (!data.end_date) return true;
@@ -176,6 +194,13 @@ type EventDialogProps = {
   mode: 'create' | 'edit' | 'view';
 };
 
+const getAcademicYear = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0 = Jan, 5 = June
+  return month >= 5 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+};
+
 const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogProps) => {
   const { user, profile } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -195,6 +220,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     defaultValues: {
       title: '',
       description: '',
+      academic_year: getAcademicYear(),
+      program_driven_by: undefined,
+      quarter: undefined,
+      program_type: undefined,
+      program_theme: undefined,
       department_club: '',
       mode_of_event: undefined,
       category: [],
@@ -218,7 +248,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       end_time: '',
       coordinators: [{ name: '', contact: '' }],
       speakers_list: [{ name: '', details: '', contact: '' }],
-      poster_url: '', // Initialize poster URL
+      poster_url: '',
     },
   });
 
@@ -237,7 +267,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const selectedVenueId = form.watch('venue_id');
   const currentPosterUrl = form.watch('poster_url');
 
-  // --- Dropzone Setup ---
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
       const rejection = fileRejections[0];
@@ -266,7 +295,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     maxSize: 1024 * 1024, // 1MB
     disabled: isReadOnly,
   });
-  // --- End Dropzone Setup ---
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -299,6 +327,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       form.reset({
         ...event,
+        academic_year: event.academic_year || getAcademicYear(),
+        program_driven_by: event.program_driven_by || '',
+        quarter: event.quarter || '',
+        program_type: event.program_type || '',
+        program_theme: event.program_theme || '',
         end_date: event.end_date || '',
         expected_audience: event.expected_audience ?? null,
         budget_estimate: event.budget_estimate ?? null,
@@ -315,12 +348,13 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         speakers_list: parsedSpeakers.length > 0 ? parsedSpeakers : [{ name: '', details: '', contact: '' }],
         venue_id: isOtherVenue ? 'other' : event.venue_id,
         other_venue_details: event.other_venue_details || '',
-        poster_url: event.poster_url || '', // Set existing poster URL
+        poster_url: event.poster_url || '',
       });
-      setPosterFile(null); // Clear file input state on edit load
+      setPosterFile(null);
     } else {
       const defaultDeptClub = profile?.department || profile?.club || profile?.professional_society || '';
       form.reset({
+        academic_year: getAcademicYear(),
         coordinators: [{ name: '', contact: '' }],
         speakers_list: [{ name: '', details: '', contact: '' }],
         department_club: defaultDeptClub,
@@ -353,7 +387,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       throw new Error(`Poster upload failed: ${uploadError.message}`);
     }
 
-    // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('event_posters')
       .getPublicUrl(filePath);
@@ -368,12 +401,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
     let finalPosterUrl = values.poster_url;
 
     try {
-      // 1. Handle Poster Upload and Mandatory Check
       if (posterFile) {
-        // If a new file is selected, upload it
         finalPosterUrl = await uploadPoster(posterFile);
       } else if (!finalPosterUrl) {
-        // If no new file is selected AND no existing URL exists, it's mandatory.
         form.setError('poster_url', { type: 'manual', message: 'Event poster is mandatory.' });
         setIsSubmitting(false);
         return;
@@ -398,6 +428,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       const eventData = {
         title: values.title,
         description: values.description,
+        academic_year: values.academic_year,
+        program_driven_by: values.program_driven_by,
+        quarter: values.quarter,
+        program_type: values.program_type,
+        program_theme: values.program_theme,
         event_date: values.event_date,
         end_date: values.end_date || null,
         start_time: values.start_time,
@@ -423,10 +458,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         principal_approval_at: null,
         venue_id: values.venue_id === 'other' ? null : values.venue_id,
         other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
-        poster_url: finalPosterUrl, // Save the URL
+        poster_url: finalPosterUrl,
       };
 
-      // 2. Check Venue Availability
       const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
         p_venue_id: values.venue_id === 'other' ? null : values.venue_id,
         p_start_date: values.event_date,
@@ -442,7 +476,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         return;
       }
 
-      // 3. Insert/Update Event
       let error;
       if (isEditMode) {
         let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
@@ -547,6 +580,19 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     </div>
                   ))}
                   {!isReadOnly && (<Button type="button" variant="outline" onClick={() => appendCoordinator({ name: '', contact: '' })} className="w-full mt-2"><Plus className="mr-2 h-4 w-4" /> Add New Coordinator</Button>)}
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Program Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="academic_year" render={({ field }) => (<FormItem><FormLabel>Academic Year</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="program_driven_by" render={({ field }) => (<FormItem><FormLabel>Program Driven By</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_DRIVEN_BY.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="quarter" render={({ field }) => (<FormItem><FormLabel>Quarter</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{QUARTERS.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="program_theme" render={({ field }) => (<FormItem><FormLabel>Program Theme</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_THEMES.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <div className="md:col-span-2">
+                      <FormField control={form.control} name="program_type" render={({ field }) => (<FormItem><FormLabel>Program Type</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_TYPES.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
@@ -684,7 +730,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                   <FormField control={form.control} name="promotion_strategy" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{PROMOTION_STRATEGIES.map((item) => (<FormField key={item} control={form.control} name="promotion_strategy" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item.replace(/_/g, ' ')}</FormLabel></FormItem>)} />))}</div>{form.watch('promotion_strategy').includes('others') && (<FormField control={form.control} name="promotion_strategy_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Promotion Strategy</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
                 </div>
                 
-                {/* --- Poster Upload Section --- */}
                 <div className="space-y-4 md:col-span-2 pt-4 border-t">
                   <h3 className="text-lg font-semibold border-b pb-2">Event Poster (Mandatory JPEG, Max 1MB)</h3>
                   
@@ -734,7 +779,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     />
                   )}
                 </div>
-                {/* --- End Poster Upload Section --- */}
               </div>
 
               {(isEditMode || isReadOnly) && event && (

@@ -121,6 +121,11 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
           <div className="p-2">
             <ReportRow label="Event Title" value={data.title} />
             <ReportRow label="Department/Club" value={data.department_club} />
+            <ReportRow label="Academic Year" value={data.academic_year} />
+            <ReportRow label="Program Driven By" value={data.program_driven_by} />
+            <ReportRow label="Quarter" value={data.quarter} />
+            <ReportRow label="Program Type" value={data.program_type} />
+            <ReportRow label="Program Theme" value={data.program_theme} />
             <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
             <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
             <ReportRow label="Time" value={`${formatTime12Hour(data.start_time)} - ${formatTime12Hour(data.end_time)}`} />
@@ -176,12 +181,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
       const { data, error } = await supabase
         .from('events')
         .select(`
-          id, title, description, venue_id, event_date, start_time, end_time, unique_code,
-          expected_audience, status, remarks, submitted_by, created_at, updated_at, 
-          department_club, coordinator_name, coordinator_contact, mode_of_event, 
-          category, objective, sdg_alignment, target_audience, proposed_outcomes, 
-          speakers, speaker_details, budget_estimate, funding_source, promotion_strategy, 
-          hod_approval_at, dean_approval_at, principal_approval_at,
+          *,
           venues ( name, location )
         `)
         .eq('id', event.id)
