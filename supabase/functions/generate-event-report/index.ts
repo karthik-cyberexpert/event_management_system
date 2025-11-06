@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-// import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0' // Temporarily commented out
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +20,8 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
         throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.');
     }
     
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    // Use the base URL without the API key query parameter
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
     const prompt = `Based on the following event details, write a concise and formal "Objective" section for an activity report. The output should be a single, well-written paragraph suitable for an official document.
 
@@ -46,6 +47,8 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            // Pass API key via Authorization header (standard practice)
+            'Authorization': `Bearer ${GEMINI_API_KEY}`,
         },
         body: JSON.stringify(payload),
     });
@@ -57,6 +60,7 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
         } catch {
             errorBody = { message: 'Could not parse error response body from Gemini API.' };
         }
+        // Throw a detailed error including the HTTP status and any message from the API
         throw new Error(`Gemini API failed with status ${response.status}. Details: ${JSON.stringify(errorBody)}`);
     }
 
@@ -77,18 +81,32 @@ serve(async (req) => {
   }
 
   try {
-    // --- TEMPORARY: Skip DB fetch to isolate Gemini API call ---
-    const dummyEvent = {
-        title: "Testing AI Integration",
-        objective: "To confirm the AI function is working correctly.",
-        description: "This is a test event description to generate a report objective."
-    };
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { event_id } = await req.json();
+
+    if (!event_id) {
+        return new Response(JSON.stringify({ error: 'Missing event_id' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+        });
+    }
+
+    // Fetch only the necessary fields
+    const { data: event, error: eventError } = await supabaseAdmin
+        .from('events')
+        .select('title, objective, description')
+        .eq('id', event_id)
+        .single();
+
+    if (eventError || !event) throw new Error('Event not found or access denied.');
     
-    const objectiveText = await callGeminiApi(dummyEvent);
+    const objectiveText = await callGeminiApi(event);
 
-    // --- END TEMPORARY BLOCK ---
-
-    return new Response(JSON.stringify({ objective: objectiveText, status: "TEST_SUCCESS" }), {
+    return new Response(JSON.stringify({ objective: objectiveText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
