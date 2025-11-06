@@ -23,14 +23,29 @@ import {
 import { toast } from 'sonner';
 import { Download, UploadCloud, Loader2, Image, Users, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { format, isPast } from 'date-fns';
+import { format, isPast, differenceInHours, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const MAX_PHOTOS = 4;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+
+const ACTIVITY_LEAD_BY_OPTIONS = [
+  'Internal Faculty',
+  'External Speaker',
+  'Student Coordinator',
+  'Club/Society Head',
+  'Department HOD',
+];
 
 const socialMediaPlatforms = [
   { id: 'twitter', label: 'Twitter', icon: Twitter },
@@ -44,7 +59,6 @@ const formSchema = z.object({
   faculty_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
   external_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
   activity_lead_by: z.string().min(1, 'Activity lead is required'),
-  activity_duration_hours: z.coerce.number().positive('Must be a positive number'),
   final_report_remarks: z.string().optional(),
   photos: z.array(z.instanceof(File)).min(1, 'At least one photo is required').max(MAX_PHOTOS),
   social_media_selection: z.array(z.string()).optional(),
@@ -60,6 +74,7 @@ type ReportData = {
   aiObjective: string;
   photoUrls: string[];
   formData: ReportFormData;
+  durationHours: number;
 };
 
 type EventReportGeneratorDialogProps = {
@@ -68,21 +83,55 @@ type EventReportGeneratorDialogProps = {
   onClose: () => void;
 };
 
+// Helper function to calculate duration in hours
+const calculateDurationHours = (event: any): number => {
+  if (!event.event_date || !event.start_time || !event.end_time) return 0;
+
+  try {
+    const startDate = parseISO(event.event_date);
+    const endDate = event.end_date ? parseISO(event.end_date) : startDate;
+
+    const [startH, startM] = event.start_time.split(':').map(Number);
+    const [endH, endM] = event.end_time.split(':').map(Number);
+
+    const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), startH, startM);
+    const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), endH, endM);
+
+    // If the event spans multiple days, calculate total hours
+    if (differenceInDays(endDate, startDate) > 0) {
+      // Simple approximation: (Days * 24) + (End Time - Start Time)
+      const days = differenceInDays(endDate, startDate);
+      const timeDiffMs = endDateTime.getTime() - startDateTime.getTime();
+      const totalHours = timeDiffMs / (1000 * 60 * 60);
+      return Math.max(1, Math.round(totalHours * 10) / 10); // Round to one decimal place
+    }
+
+    // Single day event
+    const duration = differenceInHours(endDateTime, startDateTime);
+    return Math.max(1, duration); // Ensure minimum 1 hour
+  } catch (e) {
+    console.error("Error calculating duration:", e);
+    return 1;
+  }
+};
+
+
 const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGeneratorDialogProps) => {
   const [step, setStep] = useState(1); // 1: Form, 2: Preview
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  
+  const durationHours = useMemo(() => calculateDurationHours(event), [event]);
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      student_participants: 0,
-      faculty_participants: 0,
-      external_participants: 0,
-      activity_lead_by: '',
-      activity_duration_hours: 1,
-      final_report_remarks: '',
+      student_participants: event?.student_participants ?? 0,
+      faculty_participants: event?.faculty_participants ?? 0,
+      external_participants: event?.external_participants ?? 0,
+      activity_lead_by: event?.activity_lead_by || '',
+      final_report_remarks: event?.final_report_remarks || '',
       photos: [],
       social_media_selection: [],
       twitter_url: '',
@@ -146,7 +195,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           faculty_participants: formData.faculty_participants,
           external_participants: formData.external_participants,
           activity_lead_by: formData.activity_lead_by,
-          activity_duration_hours: formData.activity_duration_hours,
+          activity_duration_hours: durationHours, // Use calculated duration
           final_report_remarks: formData.final_report_remarks,
           report_photo_urls: photoUrls,
           social_media_links,
@@ -154,7 +203,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         .eq('id', event.id);
       if (updateError) throw updateError;
 
-      setReportData({ aiObjective: aiData.objective, photoUrls, formData });
+      setReportData({ aiObjective: aiData.objective, photoUrls, formData, durationHours });
       setStep(2);
     } catch (e: any) {
       toast.error(`Report generation failed: ${e.message}`);
@@ -179,7 +228,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
   const renderReportContent = () => {
     if (!reportData) return null;
-    const { aiObjective, photoUrls, formData } = reportData;
+    const { aiObjective, photoUrls, formData, durationHours } = reportData;
     const totalParticipants = formData.student_participants + formData.faculty_participants + formData.external_participants;
 
     return (
@@ -221,7 +270,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
               <div className="grid grid-cols-2"><span className="font-bold">Program Driven By:</span><span>{event.program_driven_by}</span></div>
               <div className="grid grid-cols-2"><span className="font-bold">Program/Activity Name:</span><span>{event.title}</span></div>
               <div className="grid grid-cols-2"><span className="font-bold">Activity Lead By:</span><span>{formData.activity_lead_by}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Duration (hours):</span><span>{formData.activity_duration_hours}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Duration (hours):</span><span>{durationHours}</span></div>
               <div className="grid grid-cols-2"><span className="font-bold">End Date:</span><span>{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span></div>
               <div className="grid grid-cols-2"><span className="font-bold">No. of Faculty Participants:</span><span>{formData.faculty_participants}</span></div>
               <div className="grid grid-cols-2"><span className="font-bold">Expenditure Amount:</span><span>{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span></div>
@@ -296,8 +345,32 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                 <FormField control={form.control} name="student_participants" render={({ field }) => (<FormItem><FormLabel>No. of Student Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="faculty_participants" render={({ field }) => (<FormItem><FormLabel>No. of Faculty Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="external_participants" render={({ field }) => (<FormItem><FormLabel>No. of External Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="activity_lead_by" render={({ field }) => (<FormItem><FormLabel>Activity Lead By</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="activity_duration_hours" render={({ field }) => (<FormItem><FormLabel>Duration (in hours)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                
+                <FormField control={form.control} name="activity_lead_by" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activity Lead By</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select lead role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ACTIVITY_LEAD_BY_OPTIONS.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                
+                <FormItem>
+                  <FormLabel>Duration (in hours)</FormLabel>
+                  <Input value={durationHours} disabled />
+                  <FormDescription className="text-xs">Calculated from event start/end time.</FormDescription>
+                </FormItem>
+                
                 <FormField control={form.control} name="final_report_remarks" render={({ field }) => (<FormItem className="md:col-span-3"><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
 
