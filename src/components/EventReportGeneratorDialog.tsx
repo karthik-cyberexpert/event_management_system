@@ -275,46 +275,47 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           <h3 className="text-lg">Activity Report Copy</h3>
         </div>
 
-        {/* Section 1 */}
-        <section className="border border-black p-2">
-          <div className="grid grid-cols-2 gap-x-4">
-            {/* Left Column */}
-            <div className="space-y-1 text-sm">
-              <div className="grid grid-cols-2"><span className="font-bold">Academic Year:</span><span>{event.academic_year}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Quarter:</span><span>{event.quarter}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Program Type:</span><span>{event.program_type}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Program Theme:</span><span>{event.program_theme}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Start Date:</span><span>{format(new Date(event.event_date), 'dd-MM-yyyy')}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">No. of Student Participants:</span><span>{formData.student_participants}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">No. of External Participants:</span><span>{formData.external_participants}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Remarks:</span><span>{formData.final_report_remarks || 'N/A'}</span></div>
-            </div>
-            {/* Right Column */}
-            <div className="space-y-1 text-sm border-l border-black pl-4">
-              <div className="grid grid-cols-2"><span className="font-bold">Program Driven By:</span><span>{event.program_driven_by}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Program/Activity Name:</span><span>{event.title}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Activity Lead By:</span><span>{formData.activity_lead_by}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Duration (hours):</span><span>{durationHours}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">End Date:</span><span>{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">No. of Faculty Participants:</span><span>{formData.faculty_participants}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Expenditure Amount:</span><span>{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span></div>
-              <div className="grid grid-cols-2"><span className="font-bold">Mode of Session:</span><span className="capitalize">{event.mode_of_event}</span></div>
-            </div>
+        {/* Section 1: Event Details (Improved Alignment, No Border) */}
+        <section className="p-2">
+          <div className="grid grid-cols-4 gap-y-1 text-sm">
+            <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
+            <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
+            
+            <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
+            <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
+            
+            <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
+            <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
+            
+            <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
+            <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
+            
+            <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
+            <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
+            
+            <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
+            <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
+            
+            <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
+            <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
+            
+            <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
+            <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
           </div>
         </section>
 
-        {/* Section 2 */}
-        <section className="border border-black p-2 mt-4">
-          <h4 className="font-bold text-center text-md mb-2">Overview</h4>
+        {/* Section 2: Overview (Removed border and vertical divider) */}
+        <section className="p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Overview</h4>
           <div className="grid grid-cols-2 gap-x-4 text-sm">
             <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
-            <div className="border-l border-black pl-4"><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
+            <div><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
           </div>
         </section>
 
-        {/* Section 3 */}
-        <section className="border border-black p-2 mt-4">
-          <h4 className="font-bold text-center text-md mb-2">Attachments</h4>
+        {/* Section 3: Attachments (Removed border) */}
+        <section className="p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
           <div className="grid grid-cols-2 gap-4">
             {photoUrls.map((url, index) => (
               <div key={index} className="border border-gray-300 p-1">
@@ -324,9 +325,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           </div>
         </section>
 
-        {/* Section 4 */}
-        <section className="border border-black p-2 mt-4">
-          <h4 className="font-bold text-center text-md mb-2">Promotion in Social Media</h4>
+        {/* Section 4: Social Media (Removed outer border) */}
+        <section className="p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Promotion in Social Media</h4>
           <table className="w-full text-sm border-collapse border border-black">
             <thead><tr><th className="border border-black p-1">Social Media</th><th className="border border-black p-1">URL</th></tr></thead>
             <tbody>
