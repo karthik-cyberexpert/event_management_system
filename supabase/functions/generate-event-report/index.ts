@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts" // Updated Deno std version
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -47,7 +47,7 @@ async function callGeminiApi(eventDetails: { title: string, objective: string, d
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            // Pass API key via Authorization header (standard practice)
+            // Pass API key via Authorization header
             'Authorization': `Bearer ${GEMINI_API_KEY}`,
         },
         body: JSON.stringify(payload),
