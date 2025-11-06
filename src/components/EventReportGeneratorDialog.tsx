@@ -40,6 +40,10 @@ import {
 const MAX_PHOTOS = 4;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 
+// !!! IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED EXTERNAL SERVERLESS FUNCTION URL !!!
+// Example: https://your-project-name.vercel.app/api/generate-report
+const EXTERNAL_AI_REPORT_ENDPOINT = 'https://YOUR_EXTERNAL_SERVERLESS_URL/generate-report';
+
 const ACTIVITY_LEAD_BY_OPTIONS = [
   'Institute Council',
   'Student Council',
@@ -159,31 +163,38 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   };
 
   const handleGenerateReport = async (formData: ReportFormData) => {
+    if (EXTERNAL_AI_REPORT_ENDPOINT.includes('YOUR_EXTERNAL_SERVERLESS_URL')) {
+      toast.error("Configuration Error: Please deploy the external serverless function and update the EXTERNAL_AI_REPORT_ENDPOINT constant in src/components/EventReportGeneratorDialog.tsx.");
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      // 1. Upload Photos
+      // 1. Upload Photos to Supabase Storage
       const photoUploadPromises = formData.photos.map(async (file) => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${event.id}_report_${Date.now()}_${Math.random()}.${fileExt}`;
+        const fileName = `${event.id}_report_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
         const { data, error } = await supabase.storage.from('event_reports').upload(fileName, file);
         if (error) throw new Error(`Photo upload failed: ${error.message}`);
         return supabase.storage.from('event_reports').getPublicUrl(data.path).data.publicUrl;
       });
       const photoUrls = await Promise.all(photoUploadPromises);
 
-      // 2. Call Edge Function for AI Objective
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-event-report', {
-        body: { event_id: event.id },
+      // 2. Call External Serverless Function for AI Objective
+      const aiResponse = await fetch(EXTERNAL_AI_REPORT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          title: event.title, 
+          objective: event.objective, 
+          description: event.description 
+        }),
       });
       
-      if (aiError) {
-        // Handle network/invocation error
-        throw new Error(`Edge Function invocation failed: ${aiError.message}`);
-      }
-      
-      // Handle application-level error returned in the body (e.g., missing API key)
-      if (aiData.error) {
-        throw new Error(aiData.error);
+      const aiData = await aiResponse.json();
+
+      if (!aiResponse.ok || aiData.error) {
+        throw new Error(aiData.error || `AI service failed with status ${aiResponse.status}`);
       }
 
       // 3. Prepare Social Media Links
@@ -248,7 +259,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
             <p className="text-xs">Affiliated to Anna University, Chennai</p>
             <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
           </div>
-          <img src="/iic.jpg" alt="IIC Logo" className="h-24 w-auto object-contain" />
+          <img src="/iic.jpg" alt="IIC Logo" className="h-24 w-24 object-contain" />
         </header>
 
         {/* Titles */}
