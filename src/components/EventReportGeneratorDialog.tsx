@@ -19,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription, // <-- Added this import
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Download, UploadCloud, Loader2, Image, Users, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
