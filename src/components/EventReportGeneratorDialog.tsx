@@ -14,37 +14,52 @@ import {
 } from '@/components/ui/dialog';
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Download, UploadCloud, FileDown, Loader2, Image, Users } from 'lucide-react';
+import { Download, UploadCloud, Loader2, Image, Users, Twitter, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import * as XLSX from 'xlsx';
 import { format, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Checkbox } from './ui/checkbox';
 
-const MAX_PHOTO_SIZE = 1024 * 1024; // 1MB
+const MAX_PHOTOS = 4;
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+
+const socialMediaPlatforms = [
+  { id: 'twitter', label: 'Twitter', icon: Twitter },
+  { id: 'facebook', label: 'Facebook', icon: Facebook },
+  { id: 'instagram', label: 'Instagram', icon: Instagram },
+  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+] as const;
 
 const formSchema = z.object({
-  registered_users_file: z.any().optional(),
-  event_photo_file: z.any().optional(),
+  student_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
+  faculty_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
+  external_participants: z.coerce.number().int().min(0, 'Cannot be negative'),
+  activity_lead_by: z.string().min(1, 'Activity lead is required'),
+  activity_duration_hours: z.coerce.number().positive('Must be a positive number'),
+  final_report_remarks: z.string().optional(),
+  photos: z.array(z.instanceof(File)).min(1, 'At least one photo is required').max(MAX_PHOTOS),
+  social_media_selection: z.array(z.string()).optional(),
+  twitter_url: z.string().url('Invalid URL').optional().or(z.literal('')),
+  facebook_url: z.string().url('Invalid URL').optional().or(z.literal('')),
+  instagram_url: z.string().url('Invalid URL').optional().or(z.literal('')),
+  linkedin_url: z.string().url('Invalid URL').optional().or(z.literal('')),
 });
 
+type ReportFormData = z.infer<typeof formSchema>;
+
 type ReportData = {
-  aiReport: string;
-  registeredUsers: any[];
-  photoUrl: string | null;
+  aiObjective: string;
+  photoUrls: string[];
+  formData: ReportFormData;
 };
 
 type EventReportGeneratorDialogProps = {
@@ -54,155 +69,93 @@ type EventReportGeneratorDialogProps = {
 };
 
 const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGeneratorDialogProps) => {
-  const [step, setStep] = useState(1); // 1: Uploads, 2: AI Generation, 3: Preview
+  const [step, setStep] = useState(1); // 1: Form, 2: Preview
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
-  const [eventPhotoFile, setEventPhotoFile] = useState<File | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<ReportFormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      student_participants: 0,
+      faculty_participants: 0,
+      external_participants: 0,
+      activity_lead_by: '',
+      activity_duration_hours: 1,
+      final_report_remarks: '',
+      photos: [],
+      social_media_selection: [],
+      twitter_url: '',
+      facebook_url: '',
+      instagram_url: '',
+      linkedin_url: '',
+    },
   });
 
-  const isEventEnded = useMemo(() => {
-    if (!event) return false;
-    
-    const endDate = event.end_date || event.event_date;
-    const endTime = event.end_time; // HH:mm format
-    
-    if (!endDate || !endTime) return false;
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const currentFiles = form.getValues('photos') || [];
+    const newFiles = [...currentFiles, ...acceptedFiles].slice(0, MAX_PHOTOS);
+    form.setValue('photos', newFiles, { shouldValidate: true });
+  }, [form]);
 
-    try {
-      const [h, m] = endTime.split(':').map(Number);
-      const eventEndDateTime = new Date(endDate);
-      eventEndDateTime.setHours(h, m, 0, 0);
-      
-      return isPast(eventEndDateTime);
-    } catch (e) {
-      return false;
-    }
-  }, [event]);
-
-  // --- File Handling ---
-
-  const onDropPhoto = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
-    if (fileRejections.length > 0) {
-      toast.error('Photo upload failed. Max 1MB, JPEG only.');
-      setEventPhotoFile(null);
-      return;
-    }
-    if (acceptedFiles.length > 0) {
-      setEventPhotoFile(acceptedFiles[0]);
-    }
-  }, []);
-
-  const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps, isDragActive: isPhotoDragActive } = useDropzone({
-    onDrop: onDropPhoto,
-    accept: { 'image/jpeg': ['.jpeg', '.jpg'] },
-    maxFiles: 1,
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/jpeg': ['.jpeg', '.jpg'], 'image/png': ['.png'] },
+    maxFiles: MAX_PHOTOS,
     maxSize: MAX_PHOTO_SIZE,
   });
 
-  const onDropUsers = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = new Uint8Array(event.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          // Use header: 1 to get array of arrays, then map to objects to ensure consistent keys
-          const json: any[] = XLSX.utils.sheet_to_json(worksheet);
-          
-          if (json.length === 0) {
-            toast.error('Registered users file is empty.');
-            setRegisteredUsers([]);
-            return;
-          }
-          setRegisteredUsers(json);
-          toast.success(`${json.length} registered users loaded.`);
-        } catch (e) {
-          toast.error('Failed to parse XLSX file.');
-          setRegisteredUsers([]);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-  }, []);
-
-  const { getRootProps: getUsersRootProps, getInputProps: getUsersInputProps, isDragActive: isUsersDragActive } = useDropzone({
-    onDrop: onDropUsers,
-    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-    maxFiles: 1,
-  });
-
-  const handleDownloadTemplate = () => {
-    const worksheet = XLSX.utils.json_to_sheet([
-      { Name: 'Participant 1', Email: 'p1@example.com', Department: 'CSE' },
-    ]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registered Users');
-    XLSX.writeFile(workbook, 'registered_users_template.xlsx');
+  const removePhoto = (index: number) => {
+    const currentFiles = form.getValues('photos');
+    const newFiles = currentFiles.filter((_, i) => i !== index);
+    form.setValue('photos', newFiles, { shouldValidate: true });
   };
 
-  // --- AI Generation ---
-
-  const handleGenerateReport = async () => {
-    if (!eventPhotoFile) {
-      toast.error('Please upload the event photo first.');
-      return;
-    }
-    if (registeredUsers.length === 0) {
-      toast.error('Please upload the registered users list first.');
-      return;
-    }
-
+  const handleGenerateReport = async (formData: ReportFormData) => {
     setIsGenerating(true);
-    let photoUrl = null;
-
     try {
-      // 1. Upload Event Photo
-      const fileExt = eventPhotoFile.name.split('.').pop();
-      const fileName = `${event.id}_photo_${Date.now()}.${fileExt}`;
-      const filePath = `photos/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('event_reports')
-        .upload(filePath, eventPhotoFile, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw new Error(`Photo upload failed: ${uploadError.message}`);
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('event_reports')
-        .getPublicUrl(filePath);
-      photoUrl = publicUrl;
-
-      // 2. Call Edge Function for AI Report Generation
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-event-report', {
-        body: {
-          event_id: event.id,
-          registered_users_count: registeredUsers.length,
-        },
+      // 1. Upload Photos
+      const photoUploadPromises = formData.photos.map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${event.id}_report_${Date.now()}_${Math.random()}.${fileExt}`;
+        const { data, error } = await supabase.storage.from('event_reports').upload(fileName, file);
+        if (error) throw new Error(`Photo upload failed: ${error.message}`);
+        return supabase.storage.from('event_reports').getPublicUrl(data.path).data.publicUrl;
       });
+      const photoUrls = await Promise.all(photoUploadPromises);
 
+      // 2. Call Edge Function for AI Objective
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-event-report', {
+        body: { event_id: event.id },
+      });
       if (aiError) throw aiError;
       if (aiData.error) throw new Error(aiData.error);
 
-      setReportData({
-        aiReport: aiData.report,
-        registeredUsers: registeredUsers,
-        photoUrl: photoUrl,
-      });
-      setStep(3); // Move to preview step
+      // 3. Prepare Social Media Links
+      const social_media_links: { [key: string]: string } = {};
+      if (formData.twitter_url) social_media_links.twitter = formData.twitter_url;
+      if (formData.facebook_url) social_media_links.facebook = formData.facebook_url;
+      if (formData.instagram_url) social_media_links.instagram = formData.instagram_url;
+      if (formData.linkedin_url) social_media_links.linkedin = formData.linkedin_url;
 
+      // 4. Update Event Record in DB
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({
+          student_participants: formData.student_participants,
+          faculty_participants: formData.faculty_participants,
+          external_participants: formData.external_participants,
+          activity_lead_by: formData.activity_lead_by,
+          activity_duration_hours: formData.activity_duration_hours,
+          final_report_remarks: formData.final_report_remarks,
+          report_photo_urls: photoUrls,
+          social_media_links,
+        })
+        .eq('id', event.id);
+      if (updateError) throw updateError;
+
+      setReportData({ aiObjective: aiData.objective, photoUrls, formData });
+      setStep(2);
     } catch (e: any) {
       toast.error(`Report generation failed: ${e.message}`);
     } finally {
@@ -210,82 +163,108 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     }
   };
 
-  // --- PDF Generation ---
-
   const handlePrint = () => {
     if (!reportRef.current) return;
-
     const printContents = reportRef.current.innerHTML;
-    
     const printableContainer = document.createElement('div');
     printableContainer.className = 'printable-container';
     printableContainer.innerHTML = printContents;
     document.body.appendChild(printableContainer);
-
     toast.info("Your browser's print dialog will open. Please select 'Save as PDF'.");
-
     setTimeout(() => {
       window.print();
       document.body.removeChild(printableContainer);
     }, 500);
   };
-  
-  // --- Render Helpers ---
 
   const renderReportContent = () => {
     if (!reportData) return null;
+    const { aiObjective, photoUrls, formData } = reportData;
+    const totalParticipants = formData.student_participants + formData.faculty_participants + formData.external_participants;
 
     return (
-      <div className="printable-report" ref={reportRef}>
-        <div className="p-4 bg-white text-black">
-          <div className="text-center mb-4">
-            <h1 className="text-xl font-bold text-gray-800">Final Event Report</h1>
-            <h2 className="text-lg font-semibold text-primary">{event.title}</h2>
-            <p className="text-sm text-gray-600">Date: {format(new Date(event.event_date), 'PPP')}</p>
+      <div className="printable-report bg-white text-black p-8 font-serif" ref={reportRef}>
+        {/* Header */}
+        <header className="flex justify-between items-center border-b-2 border-black pb-2">
+          <img src="/ace.jpeg" alt="ACE Logo" className="h-24 w-24 object-contain" />
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">ADHIYAMAAN COLLEGE OF ENGINEERING</h1>
+            <p className="text-sm font-semibold">(An Autonomous Institution)</p>
+            <p className="text-xs">Affiliated to Anna University, Chennai</p>
+            <p className="text-xs">Dr. M. G. R. Nagar, Hosur - 635130</p>
           </div>
+          <img src="/iic.jpg" alt="IIC Logo" className="h-24 w-auto object-contain" />
+        </header>
 
-          {/* AI Generated Report */}
-          <div className="mb-6 p-4 border rounded-md bg-gray-50 whitespace-pre-wrap">
-            <h3 className="text-base font-bold mb-2">AI Generated Narrative Report</h3>
-            <div className="ai-report text-sm">{reportData.aiReport}</div>
-          </div>
-
-          {/* Event Photo */}
-          {reportData.photoUrl && (
-            <div className="mb-6 photo-container">
-              <h3 className="text-base font-bold mb-2">Event Photo</h3>
-              <img 
-                src={reportData.photoUrl} 
-                alt="Event Photo" 
-                className="w-full h-auto object-contain rounded-md shadow-md"
-                style={{ maxWidth: '400px', maxHeight: '300px', margin: '0 auto' }} // Fixed size for PDF/DOCX
-              />
-            </div>
-          )}
-
-          {/* Registered Users Summary - Displaying all users without scroll */}
-          <div className="mb-6 table-container">
-            <h3 className="text-base font-bold mb-2 p-2">Registered Users ({reportData.registeredUsers.length})</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reportData.registeredUsers.map((user, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{user.name || user.Name || 'N/A'}</TableCell>
-                    <TableCell>{user.email || user.Email || 'N/A'}</TableCell>
-                    <TableCell>{user.department || user.Department || 'N/A'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+        {/* Titles */}
+        <div className="text-center my-4">
+          <h2 className="text-xl font-bold">Institution's Innovation Council</h2>
+          <h3 className="text-lg">Activity Report Copy</h3>
         </div>
+
+        {/* Section 1 */}
+        <section className="border border-black p-2">
+          <div className="grid grid-cols-2 gap-x-4">
+            {/* Left Column */}
+            <div className="space-y-1 text-sm">
+              <div className="grid grid-cols-2"><span className="font-bold">Academic Year:</span><span>{event.academic_year}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Quarter:</span><span>{event.quarter}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Program Type:</span><span>{event.program_type}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Program Theme:</span><span>{event.program_theme}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Start Date:</span><span>{format(new Date(event.event_date), 'dd-MM-yyyy')}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">No. of Student Participants:</span><span>{formData.student_participants}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">No. of External Participants:</span><span>{formData.external_participants}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Remarks:</span><span>{formData.final_report_remarks || 'N/A'}</span></div>
+            </div>
+            {/* Right Column */}
+            <div className="space-y-1 text-sm border-l border-black pl-4">
+              <div className="grid grid-cols-2"><span className="font-bold">Program Driven By:</span><span>{event.program_driven_by}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Program/Activity Name:</span><span>{event.title}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Activity Lead By:</span><span>{formData.activity_lead_by}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Duration (hours):</span><span>{formData.activity_duration_hours}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">End Date:</span><span>{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">No. of Faculty Participants:</span><span>{formData.faculty_participants}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Expenditure Amount:</span><span>{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span></div>
+              <div className="grid grid-cols-2"><span className="font-bold">Mode of Session:</span><span className="capitalize">{event.mode_of_event}</span></div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 2 */}
+        <section className="border border-black p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2">Overview</h4>
+          <div className="grid grid-cols-2 gap-x-4 text-sm">
+            <div><h5 className="font-bold mb-1">Objective:</h5><p>{aiObjective}</p></div>
+            <div className="border-l border-black pl-4"><h5 className="font-bold mb-1">Benefits in terms of learning/Skill/Knowledge Obtained:</h5><p>{event.proposed_outcomes}</p></div>
+          </div>
+        </section>
+
+        {/* Section 3 */}
+        <section className="border border-black p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2">Attachments</h4>
+          <div className="grid grid-cols-2 gap-4">
+            {photoUrls.map((url, index) => (
+              <div key={index} className="border border-gray-300 p-1">
+                <img src={url} alt={`Event Photo ${index + 1}`} className="w-full h-48 object-cover" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Section 4 */}
+        <section className="border border-black p-2 mt-4">
+          <h4 className="font-bold text-center text-md mb-2">Promotion in Social Media</h4>
+          <table className="w-full text-sm border-collapse border border-black">
+            <thead><tr><th className="border border-black p-1">Social Media</th><th className="border border-black p-1">URL</th></tr></thead>
+            <tbody>
+              {Object.entries(reportData.formData).filter(([key]) => key.endsWith('_url') && key !== 'photos').map(([key, value]) => {
+                if (!value) return null;
+                const platform = key.replace('_url', '');
+                return (<tr key={key}><td className="border border-black p-1 capitalize">{platform}</td><td className="border border-black p-1 break-all">{String(value)}</td></tr>);
+              })}
+            </tbody>
+          </table>
+        </section>
       </div>
     );
   };
@@ -293,143 +272,76 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const handleClose = () => {
     setStep(1);
     setReportData(null);
-    setRegisteredUsers([]);
-    setEventPhotoFile(null);
+    form.reset();
     onClose();
   };
 
+  const selectedSocialMedia = form.watch('social_media_selection') || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={cn("sm:max-w-4xl max-h-[95vh] overflow-y-auto", step === 3 && "sm:max-w-5xl")}>
+      <DialogContent className={cn("sm:max-w-4xl max-h-[95vh] overflow-y-auto", step === 2 && "sm:max-w-6xl")}>
         <DialogHeader className="print:hidden">
           <DialogTitle>Generate Final Report: {event?.title}</DialogTitle>
           <DialogDescription>
-            {step === 1 && 'Step 1: Upload required files (Registered Users List & Event Photo).'}
-            {step === 2 && 'Step 2: Generate AI Narrative Report.'}
-            {step === 3 && 'Step 3: Review and Download Final PDF Report.'}
+            {step === 1 ? 'Step 1: Provide post-event details and upload photos.' : 'Step 2: Review and download the final report.'}
           </DialogDescription>
         </DialogHeader>
         
-        {!isEventEnded && (
-          <div className="text-center p-8 text-red-500 font-semibold">
-            This event has not ended yet. Report generation is only available after the event concludes.
-          </div>
-        )}
-
-        {isEventEnded && (
+        {step === 1 && (
           <Form {...form}>
-            <form className="space-y-6">
-              {/* Step 1: Uploads */}
-              {step === 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Registered Users Upload */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center"><Users className="h-5 w-5 mr-2" /> Registered Users List (XLSX)</h3>
-                    <Button type="button" variant="outline" onClick={handleDownloadTemplate} className="w-full">
-                      <FileDown className="mr-2 h-4 w-4" /> Download Template
-                    </Button>
-                    <div
-                      {...getUsersRootProps()}
-                      className={cn(
-                        'p-8 border-2 border-dashed rounded-md text-center cursor-pointer transition-colors',
-                        isUsersDragActive ? 'border-primary bg-primary/10' : 'border-border'
-                      )}
-                    >
-                      <input {...getUsersInputProps()} />
-                      <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                      {registeredUsers.length > 0 ? (
-                        <p className="text-sm font-medium text-green-600">{registeredUsers.length} users loaded.</p>
-                      ) : (
-                        <p>Drag & drop XLSX file here, or click to select</p>
-                      )}
+            <form onSubmit={form.handleSubmit(handleGenerateReport)} className="space-y-6">
+              {/* Section 1 Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField control={form.control} name="student_participants" render={({ field }) => (<FormItem><FormLabel>No. of Student Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="faculty_participants" render={({ field }) => (<FormItem><FormLabel>No. of Faculty Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="external_participants" render={({ field }) => (<FormItem><FormLabel>No. of External Participants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="activity_lead_by" render={({ field }) => (<FormItem><FormLabel>Activity Lead By</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="activity_duration_hours" render={({ field }) => (<FormItem><FormLabel>Duration (in hours)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="final_report_remarks" render={({ field }) => (<FormItem className="md:col-span-3"><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+
+              {/* Photo Uploads */}
+              <div>
+                <FormLabel>Event Photos (up to {MAX_PHOTOS}, JPEG/PNG, Max 2MB each)</FormLabel>
+                <div {...getRootProps()} className={cn('p-8 mt-2 border-2 border-dashed rounded-md text-center cursor-pointer', isDragActive && 'border-primary bg-primary/10')}><input {...getInputProps()} /><UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" /><p>Drag & drop photos here, or click to select</p></div>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {form.watch('photos').map((file, index) => (<div key={index} className="relative"><img src={URL.createObjectURL(file)} alt="preview" className="w-full h-24 object-cover rounded" /><Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => removePhoto(index)}>X</Button></div>))}
+                </div>
+                <FormMessage>{form.formState.errors.photos?.message}</FormMessage>
+              </div>
+
+              {/* Social Media */}
+              <div>
+                <FormField control={form.control} name="social_media_selection" render={() => (
+                  <FormItem>
+                    <FormLabel>Social Media Promotion</FormLabel>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {socialMediaPlatforms.map((platform) => (<FormField key={platform.id} control={form.control} name="social_media_selection" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value?.includes(platform.id)} onCheckedChange={(checked) => {return checked ? field.onChange([...(field.value || []), platform.id]) : field.onChange(field.value?.filter((v) => v !== platform.id))}} /></FormControl><platform.icon className="h-5 w-5" /><FormLabel>{platform.label}</FormLabel></FormItem>)} />))}
                     </div>
-                  </div>
-
-                  {/* Event Photo Upload */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center"><Image className="h-5 w-5 mr-2" /> Event Photo (JPEG, Max 1MB)</h3>
-                    <div
-                      {...getPhotoRootProps()}
-                      className={cn(
-                        'p-8 border-2 border-dashed rounded-md text-center cursor-pointer transition-colors h-full flex flex-col justify-center',
-                        isPhotoDragActive ? 'border-primary bg-primary/10' : 'border-border'
-                      )}
-                    >
-                      <input {...getPhotoInputProps()} />
-                      <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                      {eventPhotoFile ? (
-                        <p className="text-sm font-medium">{eventPhotoFile.name}</p>
-                      ) : (
-                        <p>Drag & drop JPEG photo here, or click to select file</p>
-                      )}
-                    </div>
-                  </div>
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  {selectedSocialMedia.includes('twitter') && <FormField control={form.control} name="twitter_url" render={({ field }) => (<FormItem><FormLabel>Twitter URL</FormLabel><FormControl><Input {...field} placeholder="https://twitter.com/..." /></FormControl><FormMessage /></FormItem>)} />}
+                  {selectedSocialMedia.includes('facebook') && <FormField control={form.control} name="facebook_url" render={({ field }) => (<FormItem><FormLabel>Facebook URL</FormLabel><FormControl><Input {...field} placeholder="https://facebook.com/..." /></FormControl><FormMessage /></FormItem>)} />}
+                  {selectedSocialMedia.includes('instagram') && <FormField control={form.control} name="instagram_url" render={({ field }) => (<FormItem><FormLabel>Instagram URL</FormLabel><FormControl><Input {...field} placeholder="https://instagram.com/..." /></FormControl><FormMessage /></FormItem>)} />}
+                  {selectedSocialMedia.includes('linkedin') && <FormField control={form.control} name="linkedin_url" render={({ field }) => (<FormItem><FormLabel>LinkedIn URL</FormLabel><FormControl><Input {...field} placeholder="https://linkedin.com/..." /></FormControl><FormMessage /></FormItem>)} />}
                 </div>
-              )}
-
-              {/* Step 2: Generation */}
-              {step === 2 && (
-                <div className="text-center p-10 space-y-4">
-                  <h3 className="text-xl font-semibold">Ready to Generate Report</h3>
-                  <p className="text-muted-foreground">
-                    The AI will analyze the event details and generate a comprehensive 500-word report.
-                  </p>
-                  <Button 
-                    type="button" 
-                    onClick={handleGenerateReport} 
-                    disabled={isGenerating}
-                    className="w-64"
-                  >
-                    {isGenerating ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-                    ) : (
-                      'Generate AI Report'
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {/* Step 3: Preview */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold print:hidden">Final Report Preview</h3>
-                  <div className="border rounded-lg overflow-hidden">
-                    {renderReportContent()}
-                  </div>
-                </div>
-              )}
+              </div>
+              <DialogFooter><Button type="submit" disabled={isGenerating}>{isGenerating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : 'Generate & Preview Report'}</Button></DialogFooter>
             </form>
           </Form>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between items-center gap-2 print:hidden">
-          <Button type="button" variant="ghost" onClick={handleClose}>
-            Close
-          </Button>
-          <div className="flex gap-2">
-            {step === 1 && isEventEnded && (
-              <Button 
-                type="button" 
-                onClick={() => setStep(2)} 
-                disabled={registeredUsers.length === 0 || !eventPhotoFile}
-              >
-                Next: Generate Report
-              </Button>
-            )}
-            {step === 2 && (
-              <Button type="button" onClick={() => setStep(1)} variant="outline" disabled={isGenerating}>
-                Back to Uploads
-              </Button>
-            )}
-            {step === 3 && (
-              <>
-                <Button onClick={handlePrint} disabled={!reportData}>
-                  <Download className="mr-2 h-4 w-4" /> Print / Save as PDF
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogFooter>
+        {step === 2 && (
+          <>
+            {renderReportContent()}
+            <DialogFooter className="print:hidden">
+              <Button type="button" variant="outline" onClick={() => setStep(1)}>Back to Edit</Button>
+              <Button onClick={handlePrint}><Download className="mr-2 h-4 w-4" /> Print / Save as PDF</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
