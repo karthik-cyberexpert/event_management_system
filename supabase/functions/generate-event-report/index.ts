@@ -6,12 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
 async function callGeminiApi(eventDetails: any): Promise<string> {
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.');
+        throw new Error('GEMINI_API_KEY is not configured in Supabase secrets. Please check your project settings.');
     }
     
     const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -40,12 +40,13 @@ async function callGeminiApi(eventDetails: any): Promise<string> {
     });
 
     if (!response.ok) {
-        let errorBody;
+        let errorBody = { message: 'Unknown error or empty response body.' };
         try {
             errorBody = await response.json();
         } catch {
-            errorBody = { message: 'Could not parse error response body.' };
+            // Ignore JSON parsing error if response body is not JSON
         }
+        // Throw a detailed error including the HTTP status and any message from the API
         throw new Error(`Gemini API failed with status ${response.status}. Details: ${JSON.stringify(errorBody)}`);
     }
 
@@ -65,6 +66,9 @@ serve(async (req) => {
   }
 
   try {
+    // Manual authentication handling is skipped here as this is an admin function called from the client
+    // but relies on the service role key for DB access (via supabaseAdmin) and external API key (via Deno.env)
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -95,6 +99,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('AI Report Generation Error:', error);
+    // Return the specific error message in the body, even if the status is 500
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
