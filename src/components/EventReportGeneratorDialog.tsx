@@ -96,21 +96,26 @@ const calculateDurationHours = (event: any): number => {
     const [startH, startM] = event.start_time.split(':').map(Number);
     const [endH, endM] = event.end_time.split(':').map(Number);
 
-    const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), startH, startM);
-    const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), endH, endM);
-
-    // If the event spans multiple days, calculate total hours
-    if (differenceInDays(endDate, startDate) > 0) {
-      // Simple approximation: (Days * 24) + (End Time - Start Time)
-      const days = differenceInDays(endDate, startDate);
-      const timeDiffMs = endDateTime.getTime() - startDateTime.getTime();
-      const totalHours = timeDiffMs / (1000 * 60 * 60);
-      return Math.max(1, Math.round(totalHours * 10) / 10); // Round to one decimal place
+    // 1. Calculate daily duration (in milliseconds)
+    const startOfDay = new Date(2000, 0, 1, startH, startM).getTime();
+    const endOfDay = new Date(2000, 0, 1, endH, endM).getTime();
+    
+    // Handle overnight events (e.g., 10 PM to 2 AM) - though unlikely for this context, we ensure end > start
+    let dailyDurationMs = endOfDay - startOfDay;
+    if (dailyDurationMs < 0) {
+      // If end time is before start time, assume it spans midnight (e.g., 9 PM to 4 AM)
+      dailyDurationMs += 24 * 60 * 60 * 1000; 
     }
 
-    // Single day event
-    const duration = differenceInHours(endDateTime, startDateTime);
-    return Math.max(1, duration); // Ensure minimum 1 hour
+    const dailyDurationHours = dailyDurationMs / (1000 * 60 * 60);
+
+    // 2. Calculate total number of days (inclusive)
+    const totalDays = differenceInDays(endDate, startDate) + 1;
+
+    // 3. Calculate total duration
+    const totalDuration = dailyDurationHours * totalDays;
+
+    return Math.max(1, Math.round(totalDuration * 10) / 10); // Round to one decimal place, minimum 1 hour
   } catch (e) {
     console.error("Error calculating duration:", e);
     return 1;
@@ -170,7 +175,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     try {
       // 1. Upload Photos to Supabase Storage
       const photoUploadPromises = formData.photos.map(async (file) => {
-        const fileExt = file.name.split('.pop');
+        const fileExt = file.name.split('.').pop();
         const fileName = `${event.id}_report_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
         const { data, error } = await supabase.storage.from('event_reports').upload(fileName, file);
         if (error) throw new Error(`Photo upload failed: ${error.message}`);
@@ -277,69 +282,69 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
         {/* Section 1: Event Details (Improved Alignment and Spacing) */}
         <section className="p-2">
-          <div className="text-sm space-y-1">
+          <div className="text-sm">
             {/* Row 1 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
             </div>
             {/* Row 2 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
             </div>
             {/* Row 3 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
             </div>
             {/* Row 4 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
             </div>
             {/* Row 5 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
             </div>
             {/* Row 6 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
             </div>
             {/* Row 7 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
             </div>
             {/* Row 8 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
             </div>
             {/* Row 9 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
             </div>
             {/* Row 10 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
             </div>
             {/* Row 11 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
             </div>
             {/* Row 12 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
             </div>
             {/* Row 13 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
             </div>
             {/* Row 14 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
             </div>
             {/* Row 15 */}
-            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
+            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
               <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
             </div>
             {/* Row 16 (Last row, no border-b) */}
-            <div className="grid grid-cols-4 pt-1">
+            <div className="grid grid-cols-4 py-1">
               <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
             </div>
           </div>
