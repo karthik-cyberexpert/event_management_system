@@ -183,31 +183,23 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       });
       const photoUrls = await Promise.all(photoUploadPromises);
 
-      // 2. Call External Serverless Function for AI Objective (MOCKED)
-      if (EXTERNAL_AI_REPORT_ENDPOINT.includes('YOUR_EXTERNAL_SERVERLESS_URL')) {
-        // MOCK AI RESPONSE
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-        aiObjective = `The primary objective of the event, "${event.title}", was to ${event.objective.toLowerCase().replace(/.$/, '')} and provide participants with practical knowledge in ${event.description.split(' ').slice(0, 5).join(' ')}. This initiative aimed to bridge the gap between theoretical understanding and real-world application, fostering innovation and skill development among the attendees.`;
-        toast.info("AI Objective mocked successfully. Remember to deploy the external function for real AI generation.");
-      } else {
-        // REAL AI CALL (If user updated the URL)
-        const aiResponse = await fetch(EXTERNAL_AI_REPORT_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            title: event.title, 
-            objective: event.objective, 
-            description: event.description 
-          }),
-        });
-        
-        const aiData = await aiResponse.json();
+      // 2. Call External Serverless Function for AI Objective
+      const aiResponse = await fetch(EXTERNAL_AI_REPORT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          title: event.title, 
+          objective: event.objective, 
+          description: event.description 
+        }),
+      });
+      
+      const aiData = await aiResponse.json();
 
-        if (!aiResponse.ok || aiData.error) {
-          throw new Error(aiData.error || `AI service failed with status ${aiResponse.status}`);
-        }
-        aiObjective = aiData.objective;
+      if (!aiResponse.ok || aiData.error) {
+        throw new Error(aiData.error || `AI service failed with status ${aiResponse.status}`);
       }
+      aiObjective = aiData.objective;
 
       // 3. Prepare Social Media Links
       const social_media_links: { [key: string]: string } = {};
