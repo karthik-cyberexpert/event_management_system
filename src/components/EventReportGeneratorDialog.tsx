@@ -173,6 +173,11 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     let aiObjective = '';
 
     try {
+      // Check if the AI endpoint is configured
+      if (EXTERNAL_AI_REPORT_ENDPOINT.includes('YOUR_EXTERNAL_SERVERLESS_URL')) {
+        throw new Error("AI Report Generation is not configured. Please update EXTERNAL_AI_REPORT_ENDPOINT in src/components/EventReportGeneratorDialog.tsx with your deployed serverless function URL.");
+      }
+
       // 1. Upload Photos to Supabase Storage
       const photoUploadPromises = formData.photos.map(async (file) => {
         const fileExt = file.name.split('.').pop();
