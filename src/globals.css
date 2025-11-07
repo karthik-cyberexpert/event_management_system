@@ -98,17 +98,31 @@
 }
 
 @media print {
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+
+  body {
+    margin: 0;
+  }
+
   body > *:not(.printable-container) {
     display: none !important;
   }
 
   .printable-container {
     display: block !important;
+    margin: 1cm;
   }
 
   /* Ensure tables and images don't get cut off weirdly */
   .printable-container img,
   .printable-container table {
     break-inside: avoid;
+  }
+
+  .page-break-before {
+    break-before: page;
   }
 }

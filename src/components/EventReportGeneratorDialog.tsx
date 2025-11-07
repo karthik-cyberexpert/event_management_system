@@ -282,69 +282,69 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
         {/* Section 1: Event Details (Improved Alignment and Spacing) */}
         <section className="p-2">
-          <div className="text-sm">
+          <div className="text-sm space-y-1">
             {/* Row 1 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Academic Year:</span><span className="col-span-2">{event.academic_year}</span>
             </div>
             {/* Row 2 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Program Driven By:</span><span className="col-span-2">{event.program_driven_by}</span>
             </div>
             {/* Row 3 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Quarter:</span><span className="col-span-2">{event.quarter}</span>
             </div>
             {/* Row 4 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Program/Activity Name:</span><span className="col-span-2">{event.title}</span>
             </div>
             {/* Row 5 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Program Type:</span><span className="col-span-2">{event.program_type}</span>
             </div>
             {/* Row 6 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Activity Lead By:</span><span className="col-span-2">{formData.activity_lead_by}</span>
             </div>
             {/* Row 7 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Program Theme:</span><span className="col-span-2">{event.program_theme}</span>
             </div>
             {/* Row 8 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Duration (hours):</span><span className="col-span-2">{durationHours}</span>
             </div>
             {/* Row 9 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Start Date:</span><span className="col-span-2">{format(new Date(event.event_date), 'dd-MM-yyyy')}</span>
             </div>
             {/* Row 10 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">End Date:</span><span className="col-span-2">{format(new Date(event.end_date || event.event_date), 'dd-MM-yyyy')}</span>
             </div>
             {/* Row 11 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">No. of Student Participants:</span><span className="col-span-2">{formData.student_participants}</span>
             </div>
             {/* Row 12 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">No. of Faculty Participants:</span><span className="col-span-2">{formData.faculty_participants}</span>
             </div>
             {/* Row 13 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">No. of External Participants:</span><span className="col-span-2">{formData.external_participants}</span>
             </div>
             {/* Row 14 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Expenditure Amount:</span><span className="col-span-2">{event.budget_estimate > 0 ? `Rs. ${event.budget_estimate}` : 'N/A'}</span>
             </div>
             {/* Row 15 */}
-            <div className="grid grid-cols-4 py-1 border-b border-gray-200">
+            <div className="grid grid-cols-4 border-b border-gray-200 pb-1">
               <span className="font-bold col-span-2">Remarks:</span><span className="col-span-2">{formData.final_report_remarks || 'N/A'}</span>
             </div>
             {/* Row 16 (Last row, no border-b) */}
-            <div className="grid grid-cols-4 py-1">
+            <div className="grid grid-cols-4 pt-1">
               <span className="font-bold col-span-2">Mode of Session:</span><span className="col-span-2 capitalize">{event.mode_of_event}</span>
             </div>
           </div>
@@ -360,7 +360,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
         </section>
 
         {/* Section 3: Attachments (Image fit changed to object-contain) */}
-        <section className="p-2 mt-4">
+        <section className="p-2 mt-4 page-break-before">
           <h4 className="font-bold text-center text-md mb-2 border-b border-gray-300 pb-1">Attachments</h4>
           <div className="grid grid-cols-2 gap-4">
             {photoUrls.map((url, index) => (
