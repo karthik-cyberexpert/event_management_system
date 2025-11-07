@@ -40,9 +40,13 @@ import {
 const MAX_PHOTOS = 4;
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 
-// !!! IMPORTANT: REPLACE THIS WITH YOUR DEPLOYED EXTERNAL SERVERLESS FUNCTION URL !!!
-// Example: https://your-project-name.vercel.app/api/generate-report
-const EXTERNAL_AI_REPORT_ENDPOINT = 'https://YOUR_EXTERNAL_SERVERLESS_URL/generate-report';
+// --- AI Endpoint Configuration ---
+// In development (localhost), this assumes the Supabase CLI is running the function locally on port 54321.
+// In production, replace the placeholder with your actual deployed Supabase Edge Function URL.
+const EXTERNAL_AI_REPORT_ENDPOINT = import.meta.env.DEV
+  ? 'http://localhost:54321/functions/v1/generate-report'
+  : 'https://sjsfhzrhxlsdmiadwwfu.supabase.co/functions/v1/generate-report';
+// ---------------------------------
 
 const ACTIVITY_LEAD_BY_OPTIONS = [
   'Institute Council',
@@ -173,9 +177,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
     let aiObjective = '';
 
     try {
-      // Check if the AI endpoint is configured
-      if (EXTERNAL_AI_REPORT_ENDPOINT.includes('YOUR_EXTERNAL_SERVERLESS_URL')) {
-        throw new Error("AI Report Generation is not configured. Please update EXTERNAL_AI_REPORT_ENDPOINT in src/components/EventReportGeneratorDialog.tsx with your deployed serverless function URL.");
+      // Check if the AI endpoint is configured for production
+      if (!import.meta.env.DEV && EXTERNAL_AI_REPORT_ENDPOINT.includes('YOUR_EXTERNAL_SERVERLESS_URL')) {
+        throw new Error("AI Report Generation is not configured for production. Please update EXTERNAL_AI_REPORT_ENDPOINT in src/components/EventReportGeneratorDialog.tsx with your deployed function URL.");
       }
 
       // 1. Upload Photos to Supabase Storage
